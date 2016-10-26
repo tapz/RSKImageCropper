@@ -7,7 +7,6 @@ Pod::Spec.new do |s|
   s.authors       = { 'Ruslan Skorb' => 'ruslan.skorb@gmail.com' }
   s.source        = { :git => 'https://github.com/tapz/RSKImageCropper.git', :tag => s.version.to_s }
   s.platform      = :ios, '9.0'
-  s.module_map    = 'RSKImageCropper/module.modulemap'
   s.source_files  = 'RSKImageCropper/*.{swift}'
   s.resources     = 'RSKImageCropper/RSKImageCropperStrings.bundle'
   s.frameworks    = 'QuartzCore', 'UIKit'
