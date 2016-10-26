@@ -1,10 +1,20 @@
+source 'https://github.com/CocoaPods/Specs.git'
 platform :ios, '9.0'
+use_frameworks!
 
-inhibit_all_warnings!
+install! 'cocoapods',
+    :integrate_targets => true,
+    :deduplicate_targets => true
 
-target 'RSKImageCropperExampleTests' do
-  pod 'Expecta+Snapshots', '2.0.0'
-  pod 'Specta', '1.0.5'
-  pod 'Expecta', '1.0.3'
-  pod 'OCMock', '2.2.4'
+target 'RSKImageCropperExample' do
+	project 'RSKImageCropperExample.xcodeproj'
+
+  target 'RSKImageCropperExampleTests' do
+        inherit! :search_paths
+        
+        #pod 'Expecta+Snapshots', '2.0.0'
+		pod 'Specta', '1.0.5'
+		pod 'Expecta', '1.0.3'
+		pod 'OCMock', '2.2.4'
+    end
 end

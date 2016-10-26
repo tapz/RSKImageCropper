@@ -518,7 +518,7 @@ public class RSKImageCropViewController: UIViewController, UIGestureRecognizerDe
         }
     }
 
-    fileprivate var rotationAngle: CGFloat {
+    internal var rotationAngle: CGFloat {
         get {
             let transform = imageScrollView.transform
             return atan2(transform.b, transform.a)
@@ -926,7 +926,7 @@ public class RSKImageCropViewController: UIViewController, UIGestureRecognizerDe
         }
     }
 
-    fileprivate func cropImage() {
+    internal func cropImage() {
         guard let originalImage = originalImage else { return }
         
         delegate?.willCropImage(originalImage)
