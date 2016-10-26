@@ -91,9 +91,9 @@
 /* End PBXHeadersBuildPhase section */
 
 /* Begin PBXNativeTarget section */
-		A5BE393C1B32B49D00ECDF88 /* RSKImageCropper */ = {
+		A5BE393C1B32B49D00ECDF88 /* RSKImageCropperSwift */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = A5BE39531B32B49D00ECDF88 /* Build configuration list for PBXNativeTarget "RSKImageCropper" */;
+			buildConfigurationList = A5BE39531B32B49D00ECDF88 /* Build configuration list for PBXNativeTarget "RSKImageCropperSwift" */;
 			buildPhases = (
 				A5BE39381B32B49D00ECDF88 /* Sources */,
 				A5BE39391B32B49D00ECDF88 /* Frameworks */,
@@ -104,7 +104,7 @@
 			);
 			dependencies = (
 			);
-			name = RSKImageCropper;
+			name = RSKImageCropperSwift;
 			productName = RSKImageCropper;
 			productReference = A5BE393D1B32B49D00ECDF88 /* RSKImageCropper.framework */;
 			productType = "com.apple.product-type.framework";
@@ -134,7 +134,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				A5BE393C1B32B49D00ECDF88 /* RSKImageCropper */,
+				A5BE393C1B32B49D00ECDF88 /* RSKImageCropperSwift */,
 			);
 		};
 /* End PBXProject section */
@@ -207,9 +207,10 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 8.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
 				MTL_ENABLE_DEBUG_INFO = YES;
 				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = RSKImageCropperSwift;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				VERSIONING_SYSTEM = "apple-generic";
@@ -250,8 +251,9 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 8.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
+				PRODUCT_NAME = RSKImageCropperSwift;
 				SDKROOT = iphoneos;
 				SWIFT_OPTIMIZATION_LEVEL = "-Owholemodule";
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -274,7 +276,6 @@
 				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = "com.ruslanskorb.$(PRODUCT_NAME:rfc1034identifier)";
-				PRODUCT_MODULE_NAME = RSKImageCropperSwift;
 				PRODUCT_NAME = RSKImageCropper;
 				SKIP_INSTALL = YES;
 				SWIFT_VERSION = 3.0.1;
@@ -294,7 +295,6 @@
 				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = "com.ruslanskorb.$(PRODUCT_NAME:rfc1034identifier)";
-				PRODUCT_MODULE_NAME = RSKImageCropperSwift;
 				PRODUCT_NAME = RSKImageCropper;
 				SKIP_INSTALL = YES;
 				SWIFT_VERSION = 3.0.1;
@@ -313,7 +313,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		A5BE39531B32B49D00ECDF88 /* Build configuration list for PBXNativeTarget "RSKImageCropper" */ = {
+		A5BE39531B32B49D00ECDF88 /* Build configuration list for PBXNativeTarget "RSKImageCropperSwift" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				A5BE39541B32B49D00ECDF88 /* Debug */,

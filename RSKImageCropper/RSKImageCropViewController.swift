@@ -24,14 +24,11 @@
 
 import UIKit
 
-enum RSKImageCropMode: Int {
+public enum RSKImageCropMode: Int {
     case circle = 0
     case square = 1
     case custom = 2
 }
-
-let kResetAnimationDuration = CGFloat(0.4)
-let kLayoutImageScrollViewAnimationDuration = CGFloat(0.25)
 
 // K is a constant such that the accumulated error of our floating-point computations is definitely bounded by K units in the last place.
 #if arch(x86_64) || CPU_TYPE_ARM64
@@ -43,7 +40,7 @@ let kLayoutImageScrollViewAnimationDuration = CGFloat(0.25)
 /**
  The `RSKImageCropViewControllerDataSource` protocol is adopted by an object that provides a custom rect and a custom path for the mask.
  */
-protocol RSKImageCropViewControllerDataSource: class {
+public protocol RSKImageCropViewControllerDataSource: class {
 
     /**
      Asks the data source a custom rect for the mask.
@@ -77,7 +74,7 @@ protocol RSKImageCropViewControllerDataSource: class {
 /**
  The `RSKImageCropViewControllerDelegate` protocol defines messages sent to a image crop view controller delegate when crop image was canceled or the original image was cropped.
  */
-protocol RSKImageCropViewControllerDelegate: class {
+public protocol RSKImageCropViewControllerDelegate: class {
 
     /**
      Tells the delegate that crop image has been canceled.
@@ -101,22 +98,25 @@ protocol RSKImageCropViewControllerDelegate: class {
 
 }
 
-class RSKImageCropViewController: UIViewController, UIGestureRecognizerDelegate{
-    lazy var imageScrollView: RSKImageScrollView = {
+public class RSKImageCropViewController: UIViewController, UIGestureRecognizerDelegate{
+    fileprivate let kResetAnimationDuration = CGFloat(0.4)
+    fileprivate let kLayoutImageScrollViewAnimationDuration = CGFloat(0.25)
+
+    fileprivate lazy var imageScrollView: RSKImageScrollView = {
         let view = RSKImageScrollView(frame: .zero)
         view.clipsToBounds = false
         view.isAspectFill = self.isAvoidEmptySpaceAroundImage
         return view
     }()
 
-    lazy var overlayView: RSKTouchView = {
+    fileprivate lazy var overlayView: RSKTouchView = {
         let view = RSKTouchView()
         view.receiver = self.imageScrollView
         view.layer.addSublayer(self.maskLayer)
         return view
     }()
 
-    lazy var maskLayer: CAShapeLayer = {
+    fileprivate lazy var maskLayer: CAShapeLayer = {
         let layer = CAShapeLayer()
         layer.fillRule = kCAFillRuleEvenOdd
         layer.fillColor = self.maskLayerColor.cgColor
@@ -125,9 +125,9 @@ class RSKImageCropViewController: UIViewController, UIGestureRecognizerDelegate{
         return layer
     }()
 
-    let maskLayerColor = UIColor(red: 0.0, green: 0.0, blue: 0.0, alpha: 0.7)
+    fileprivate let maskLayerColor = UIColor(red: 0.0, green: 0.0, blue: 0.0, alpha: 0.7)
 
-    lazy var moveAndScaleLabel: UILabel = {
+    fileprivate lazy var moveAndScaleLabel: UILabel = {
         let label = UILabel()
         label.translatesAutoresizingMaskIntoConstraints = false
         label.backgroundColor = UIColor.clear
@@ -137,7 +137,7 @@ class RSKImageCropViewController: UIViewController, UIGestureRecognizerDelegate{
         return label
     }()
 
-    lazy var cancelButton: UIButton = {
+    fileprivate lazy var cancelButton: UIButton = {
         let button = UIButton()
         button.translatesAutoresizingMaskIntoConstraints = false
         button.setTitle(RSKLocalizedString("Cancel", "Cancel button"), for: .normal)
@@ -146,7 +146,7 @@ class RSKImageCropViewController: UIViewController, UIGestureRecognizerDelegate{
         return button
     }()
 
-    lazy var chooseButton: UIButton = {
+    fileprivate lazy var chooseButton: UIButton = {
         let button = UIButton()
         button.translatesAutoresizingMaskIntoConstraints = false
         button.setTitle(RSKLocalizedString("Choose", "Choose button"), for: .normal)
@@ -155,7 +155,7 @@ class RSKImageCropViewController: UIViewController, UIGestureRecognizerDelegate{
         return button
     }()
 
-    lazy var doubleTapGestureRecognizer: UITapGestureRecognizer = {
+    fileprivate lazy var doubleTapGestureRecognizer: UITapGestureRecognizer = {
         let recognizer = UITapGestureRecognizer(target: self, action: #selector(handleDoubleTap))
         recognizer.delaysTouchesEnded = false
         recognizer.numberOfTapsRequired = 2
@@ -163,7 +163,7 @@ class RSKImageCropViewController: UIViewController, UIGestureRecognizerDelegate{
         return recognizer
     }()
 
-    lazy var rotationGestureRecognizer: UIRotationGestureRecognizer = {
+    fileprivate lazy var rotationGestureRecognizer: UIRotationGestureRecognizer = {
         let recognizer = UIRotationGestureRecognizer(target: self, action: #selector(handleRotation))
         recognizer.delaysTouchesEnded = false
         recognizer.delegate = self
@@ -171,13 +171,13 @@ class RSKImageCropViewController: UIViewController, UIGestureRecognizerDelegate{
         return recognizer
     }()
 
-    var isOriginalNavigationControllerNavigationBarHidden = false
-    var originalNavigationControllerNavigationBarShadowImage: UIImage?
-    var originalNavigationControllerViewBackgroundColor: UIColor?
-    var isOriginalStatusBarHidden = false
+    fileprivate var isOriginalNavigationControllerNavigationBarHidden = false
+    fileprivate var originalNavigationControllerNavigationBarShadowImage: UIImage?
+    fileprivate var originalNavigationControllerViewBackgroundColor: UIColor?
+    fileprivate var isOriginalStatusBarHidden = false
 
-    var maskRect = CGRect.zero
-    var maskPath = UIBezierPath() {
+    fileprivate var maskRect = CGRect.zero
+    fileprivate var maskPath = UIBezierPath() {
         didSet {
             let clipPath = UIBezierPath(rect: rectForClipPath)
             clipPath.append(maskPath)
@@ -192,36 +192,52 @@ class RSKImageCropViewController: UIViewController, UIGestureRecognizerDelegate{
         }
     }
 
-    var didSetupConstraints = false
-    var moveAndScaleLabelTopConstraint = NSLayoutConstraint()
-    var cancelButtonBottomConstraint = NSLayoutConstraint()
-    var cancelButtonLeadingConstraint = NSLayoutConstraint()
-    var chooseButtonBottomConstraint = NSLayoutConstraint()
-    var chooseButtonTrailingConstraint = NSLayoutConstraint()
+    fileprivate var didSetupConstraints = false
+    fileprivate var moveAndScaleLabelTopConstraint = NSLayoutConstraint()
+    fileprivate var cancelButtonBottomConstraint = NSLayoutConstraint()
+    fileprivate var cancelButtonLeadingConstraint = NSLayoutConstraint()
+    fileprivate var chooseButtonBottomConstraint = NSLayoutConstraint()
+    fileprivate var chooseButtonTrailingConstraint = NSLayoutConstraint()
 
-    var isAvoidEmptySpaceAroundImage = false
-    var isApplyMaskToCroppedImage = false
-    var maskLayerLineWidth = CGFloat(1.0)
-    var isRotationEnabled = false
-    var cropMode = RSKImageCropMode.circle
+    public var isAvoidEmptySpaceAroundImage = false {
+        didSet {
+            imageScrollView.isAspectFill = isAvoidEmptySpaceAroundImage
+        }
+    }
     
-    var portraitCircleMaskRectInnerEdgeInset = CGFloat(15.0)
-    var portraitSquareMaskRectInnerEdgeInset = CGFloat(20.0)
-    var portraitMoveAndScaleLabelTopAndCropViewTopVerticalSpace = CGFloat(64.0)
-    var portraitCropViewBottomAndCancelButtonBottomVerticalSpace = CGFloat(21.0)
-    var portraitCropViewBottomAndChooseButtonBottomVerticalSpace = CGFloat(21.0)
-    var portraitCancelButtonLeadingAndCropViewLeadingHorizontalSpace = CGFloat(13.0)
-    var portraitCropViewTrailingAndChooseButtonTrailingHorizontalSpace = CGFloat(13.0)
+    public var isApplyMaskToCroppedImage = false
+    public var maskLayerLineWidth = CGFloat(1.0)
+    public var isRotationEnabled = false {
+        didSet {
+            rotationGestureRecognizer.isEnabled = isRotationEnabled
+        }
+    }
     
-    var landscapeCircleMaskRectInnerEdgeInset = CGFloat(45.0)
-    var landscapeSquareMaskRectInnerEdgeInset = CGFloat(45.0)
-    var landscapeMoveAndScaleLabelTopAndCropViewTopVerticalSpace = CGFloat(12.0)
-    var landscapeCropViewBottomAndCancelButtonBottomVerticalSpace = CGFloat(12.0)
-    var landscapeCropViewBottomAndChooseButtonBottomVerticalSpace = CGFloat(12.0)
-    var landscapeCancelButtonLeadingAndCropViewLeadingHorizontalSpace = CGFloat(13.0)
-    var landscapeCropViewTrailingAndChooseButtonTrailingHorizontalSpace = CGFloat(13.0)
+    public var cropMode = RSKImageCropMode.circle {
+        didSet {
+            if self.imageScrollView.zoomView != nil {
+                reset(animated: false)
+            }
+        }
+    }
+    
+    fileprivate var portraitCircleMaskRectInnerEdgeInset = CGFloat(15.0)
+    fileprivate var portraitSquareMaskRectInnerEdgeInset = CGFloat(20.0)
+    fileprivate var portraitMoveAndScaleLabelTopAndCropViewTopVerticalSpace = CGFloat(64.0)
+    fileprivate var portraitCropViewBottomAndCancelButtonBottomVerticalSpace = CGFloat(21.0)
+    fileprivate var portraitCropViewBottomAndChooseButtonBottomVerticalSpace = CGFloat(21.0)
+    fileprivate var portraitCancelButtonLeadingAndCropViewLeadingHorizontalSpace = CGFloat(13.0)
+    fileprivate var portraitCropViewTrailingAndChooseButtonTrailingHorizontalSpace = CGFloat(13.0)
+    
+    fileprivate var landscapeCircleMaskRectInnerEdgeInset = CGFloat(45.0)
+    fileprivate var landscapeSquareMaskRectInnerEdgeInset = CGFloat(45.0)
+    fileprivate var landscapeMoveAndScaleLabelTopAndCropViewTopVerticalSpace = CGFloat(12.0)
+    fileprivate var landscapeCropViewBottomAndCancelButtonBottomVerticalSpace = CGFloat(12.0)
+    fileprivate var landscapeCropViewBottomAndChooseButtonBottomVerticalSpace = CGFloat(12.0)
+    fileprivate var landscapeCancelButtonLeadingAndCropViewLeadingHorizontalSpace = CGFloat(13.0)
+    fileprivate var landscapeCropViewTrailingAndChooseButtonTrailingHorizontalSpace = CGFloat(13.0)
 
-    var originalImage: UIImage? {
+    fileprivate var originalImage: UIImage? {
         didSet {
             if self.isViewLoaded && self.view.window != nil {
                 displayImage()
@@ -229,8 +245,8 @@ class RSKImageCropViewController: UIViewController, UIGestureRecognizerDelegate{
         }
     }
     
-    weak var dataSource: RSKImageCropViewControllerDataSource?
-    weak var delegate: RSKImageCropViewControllerDelegate?
+    public weak var dataSource: RSKImageCropViewControllerDataSource?
+    public weak var delegate: RSKImageCropViewControllerDelegate?
 
     /// -----------------------------------
     /// @name Accessing the Mask Attributes
@@ -243,29 +259,29 @@ class RSKImageCropViewController: UIViewController, UIGestureRecognizerDelegate{
 
     //MARK: - Lifecycle
 
-    init() {
+    public init() {
         super.init(nibName: nil, bundle: nil)
     }
 
-    convenience init(image: UIImage) {
+    public convenience init(image: UIImage) {
         self.init()
         self.originalImage = image
     }
 
-    convenience init(image: UIImage, cropMode: RSKImageCropMode) {
+    public convenience init(image: UIImage, cropMode: RSKImageCropMode) {
         self.init(image: image)
         self.cropMode = cropMode
     }
     
-    required init?(coder aDecoder: NSCoder) {
+    public required init?(coder aDecoder: NSCoder) {
         super.init(coder: aDecoder)
     }
 
-    override var prefersStatusBarHidden: Bool {
+    public override var prefersStatusBarHidden: Bool {
         return true
     }
 
-    override func viewDidLoad() {
+    public override func viewDidLoad() {
         super.viewDidLoad()
         
         edgesForExtendedLayout = []
@@ -284,7 +300,7 @@ class RSKImageCropViewController: UIViewController, UIGestureRecognizerDelegate{
         view.addGestureRecognizer(rotationGestureRecognizer)
     }
     
-    var isAppExtension: Bool {
+    fileprivate var isAppExtension: Bool {
         if let exePath = Bundle.main.executablePath {
             return exePath.contains(".appex")
         }
@@ -292,7 +308,7 @@ class RSKImageCropViewController: UIViewController, UIGestureRecognizerDelegate{
         return false
     }
 
-    override func viewWillAppear(_ animated: Bool) {
+    public override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         
         if !isAppExtension {
@@ -309,7 +325,7 @@ class RSKImageCropViewController: UIViewController, UIGestureRecognizerDelegate{
         }
     }
 
-    override func viewDidAppear(_ animated: Bool) {
+    public override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         
         if let navi = navigationController {
@@ -318,7 +334,7 @@ class RSKImageCropViewController: UIViewController, UIGestureRecognizerDelegate{
         }
     }
 
-    override func viewWillDisappear(_ animated: Bool) {
+    public override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
         
         if !isAppExtension {
@@ -332,7 +348,7 @@ class RSKImageCropViewController: UIViewController, UIGestureRecognizerDelegate{
         }
     }
 
-    override func viewWillLayoutSubviews() {
+    public override func viewWillLayoutSubviews() {
         super.viewWillLayoutSubviews()
         
         updateMaskRect()
@@ -342,7 +358,7 @@ class RSKImageCropViewController: UIViewController, UIGestureRecognizerDelegate{
         view.setNeedsUpdateConstraints()
     }
 
-    override func viewDidLayoutSubviews() {
+    public override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         
         if imageScrollView.zoomView == nil {
@@ -350,7 +366,7 @@ class RSKImageCropViewController: UIViewController, UIGestureRecognizerDelegate{
         }
     }
 
-    override func updateViewConstraints() {
+    public override func updateViewConstraints() {
         super.updateViewConstraints()
         
         if !didSetupConstraints {
@@ -457,7 +473,7 @@ class RSKImageCropViewController: UIViewController, UIGestureRecognizerDelegate{
 
     // #pragma mark - Custom Accessors
 
-    var cropRect: CGRect {
+    fileprivate var cropRect: CGRect {
         var cropRect = CGRect.zero
         let zoomScale = 1.0 / imageScrollView.zoomScale
         
@@ -484,7 +500,7 @@ class RSKImageCropViewController: UIViewController, UIGestureRecognizerDelegate{
         return cropRect
     }
 
-    var rectForClipPath: CGRect {
+    fileprivate var rectForClipPath: CGRect {
         if maskLayerStrokeColor == nil {
             return overlayView.frame
         } else {
@@ -493,7 +509,7 @@ class RSKImageCropViewController: UIViewController, UIGestureRecognizerDelegate{
         }
     }
 
-    var rectForMaskPath: CGRect {
+    fileprivate var rectForMaskPath: CGRect {
         if maskLayerStrokeColor == nil {
             return maskRect
         } else {
@@ -502,7 +518,7 @@ class RSKImageCropViewController: UIViewController, UIGestureRecognizerDelegate{
         }
     }
 
-    var rotationAngle: CGFloat {
+    fileprivate var rotationAngle: CGFloat {
         get {
             let transform = imageScrollView.transform
             return atan2(transform.b, transform.a)
@@ -517,54 +533,29 @@ class RSKImageCropViewController: UIViewController, UIGestureRecognizerDelegate{
         }
     }
 
-    var zoomScale: CGFloat {
+    fileprivate var zoomScale: CGFloat {
         return imageScrollView.zoomScale
     }
 
-    func setAvoidEmptySpaceAroundImage(avoidEmptySpaceAroundImage: Bool) {
-        if self.isAvoidEmptySpaceAroundImage != avoidEmptySpaceAroundImage {
-            self.isAvoidEmptySpaceAroundImage = avoidEmptySpaceAroundImage
-            
-            self.imageScrollView.isAspectFill = avoidEmptySpaceAroundImage
-        }
-    }
-
-    func setCropMode(_ cropMode: RSKImageCropMode) {
-        if self.cropMode != cropMode {
-            self.cropMode = cropMode
-            
-            if self.imageScrollView.zoomView != nil {
-                reset(animated: false)
-            }
-        }
-    }
-
-    func setRotationEnabled(rotationEnabled: Bool) {
-        if self.isRotationEnabled != rotationEnabled {
-            isRotationEnabled = rotationEnabled
-            rotationGestureRecognizer.isEnabled = rotationEnabled
-        }
-    }
-
-    func setZoomScale(_ zoomScale: CGFloat) {
+    fileprivate func setZoomScale(_ zoomScale: CGFloat) {
         self.imageScrollView.zoomScale = zoomScale
     }
 
     // #pragma mark - Action handling
 
-    func onCancelButtonTouch() {
+    @objc fileprivate func onCancelButtonTouch() {
         cancelCrop()
     }
 
-    func onChooseButtonTouch() {
+    @objc fileprivate func onChooseButtonTouch() {
         cropImage()
     }
 
-    func handleDoubleTap(gestureRecognizer: UITapGestureRecognizer) {
+    @objc fileprivate func handleDoubleTap(gestureRecognizer: UITapGestureRecognizer) {
         reset(animated: true)
     }
 
-    func handleRotation(gestureRecognizer: UIRotationGestureRecognizer) {
+    @objc fileprivate func handleRotation(gestureRecognizer: UIRotationGestureRecognizer) {
         rotationAngle += gestureRecognizer.rotation
         gestureRecognizer.rotation = 0
         
@@ -582,13 +573,13 @@ class RSKImageCropViewController: UIViewController, UIGestureRecognizerDelegate{
 
     //#pragma mark - Public
 
-    func isPortraitInterfaceOrientation() -> Bool {
+    fileprivate func isPortraitInterfaceOrientation() -> Bool {
         return view.bounds.height > self.view.bounds.width
     }
 
     //#pragma mark - Private
 
-    func reset(animated: Bool) {
+    fileprivate func reset(animated: Bool) {
         if animated {
             UIView.beginAnimations("rsk_reset", context: nil)
             UIView.setAnimationCurve(.easeInOut)
@@ -606,7 +597,7 @@ class RSKImageCropViewController: UIViewController, UIGestureRecognizerDelegate{
         }
     }
 
-    func resetContentOffset() {
+    fileprivate func resetContentOffset() {
         guard let zoomView = imageScrollView.zoomView else { return }
         
         let boundsSize = imageScrollView.bounds.size
@@ -627,15 +618,15 @@ class RSKImageCropViewController: UIViewController, UIGestureRecognizerDelegate{
         self.imageScrollView.contentOffset = contentOffset
     }
 
-    func resetFrame() {
+    fileprivate func resetFrame() {
         layoutImageScrollView()
     }
 
-    func resetRotation() {
+    fileprivate func resetRotation() {
         rotationAngle = 0.0
     }
 
-    func resetZoomScale() {
+    fileprivate func resetZoomScale() {
         guard let originalImage = originalImage else { return }
     
         var zoomScale = CGFloat(0.0)
@@ -647,18 +638,22 @@ class RSKImageCropViewController: UIViewController, UIGestureRecognizerDelegate{
         self.imageScrollView.zoomScale = zoomScale
     }
 
-    func intersectionPointsOfLineSegment(lineSegment: RSKLineSegment, withRect rect: CGRect) -> [CGPoint] {
-        let top = RSKLineSegmentMake(start: CGPoint(x: rect.minX, y: rect.minY),
-                                     end: CGPoint(x: rect.maxX, y: rect.minY))
+    fileprivate func intersectionPointsOfLineSegment(lineSegment: RSKLineSegment, withRect rect: CGRect) -> [CGPoint] {
+        let top = RSKLineSegmentMake(
+            start: CGPoint(x: rect.minX, y: rect.minY),
+            end: CGPoint(x: rect.maxX, y: rect.minY))
         
-        let right = RSKLineSegmentMake(start: CGPoint(x: rect.maxX, y: rect.minY),
-                                       end: CGPoint(x: rect.maxX, y: rect.maxY))
+        let right = RSKLineSegmentMake(
+            start: CGPoint(x: rect.maxX, y: rect.minY),
+            end: CGPoint(x: rect.maxX, y: rect.maxY))
         
-        let bottom = RSKLineSegmentMake(start: CGPoint(x: rect.minX, y: rect.maxY),
-                                        end: CGPoint(x: rect.maxX, y: rect.maxY))
+        let bottom = RSKLineSegmentMake(
+            start: CGPoint(x: rect.minX, y: rect.maxY),
+            end: CGPoint(x: rect.maxX, y: rect.maxY))
         
-        let left = RSKLineSegmentMake(start: CGPoint(x: rect.minX, y: rect.minY),
-                                      end: CGPoint(x: rect.minX, y: rect.maxY))
+        let left = RSKLineSegmentMake(
+            start: CGPoint(x: rect.minX, y: rect.minY),
+            end: CGPoint(x: rect.minX, y: rect.maxY))
         
         let p0 = RSKLineSegmentIntersection(ls1: top, ls2: lineSegment)
         let p1 = RSKLineSegmentIntersection(ls1: right, ls2: lineSegment)
@@ -682,13 +677,13 @@ class RSKImageCropViewController: UIViewController, UIGestureRecognizerDelegate{
         return intersectionPoints
     }
 
-    func displayImage() {
+    fileprivate func displayImage() {
         guard let originalImage = originalImage else { return }
         imageScrollView.displayImage(originalImage)
         reset(animated: false)
     }
 
-    func layoutImageScrollView() {
+    fileprivate func layoutImageScrollView() {
         guard let dataSource = dataSource else { return }
     
         var frame = CGRect.zero
@@ -765,12 +760,12 @@ class RSKImageCropViewController: UIViewController, UIGestureRecognizerDelegate{
         self.imageScrollView.transform = transform
     }
 
-    func layoutOverlayView() {
+    fileprivate func layoutOverlayView() {
         let frame = CGRect(x: 0, y: 0, width: view.bounds.width * 2, height: view.bounds.height * 2)
         self.overlayView.frame = frame
     }
 
-    func updateMaskRect() {
+    fileprivate func updateMaskRect() {
         guard let dataSource = dataSource else { return }
     
         switch cropMode {
@@ -813,7 +808,7 @@ class RSKImageCropViewController: UIViewController, UIGestureRecognizerDelegate{
         }
     }
 
-    func updateMaskPath() {
+    fileprivate func updateMaskPath() {
         guard let dataSource = dataSource else { return }
     
         switch cropMode {
@@ -826,7 +821,7 @@ class RSKImageCropViewController: UIViewController, UIGestureRecognizerDelegate{
         }
     }
 
-    func croppedImage(image: UIImage, cropRect: CGRect, scale imageScale: CGFloat, orientation imageOrientation: UIImageOrientation) -> UIImage {
+    fileprivate func croppedImage(image: UIImage, cropRect: CGRect, scale imageScale: CGFloat, orientation imageOrientation: UIImageOrientation) -> UIImage {
         if image.images == nil {
             if let croppedCGImage = image.cgImage!.cropping(to: cropRect) {
                 return UIImage(cgImage: croppedCGImage, scale:imageScale, orientation:imageOrientation)
@@ -843,7 +838,7 @@ class RSKImageCropViewController: UIViewController, UIGestureRecognizerDelegate{
         }
     }
 
-    func croppedImage(image: UIImage, cropMode: RSKImageCropMode, cropRect cropRect0: CGRect, rotationAngle: CGFloat, zoomScale: CGFloat, maskPath: UIBezierPath, applyMaskToCroppedImage: Bool) -> UIImage {
+    fileprivate func croppedImage(image: UIImage, cropMode: RSKImageCropMode, cropRect cropRect0: CGRect, rotationAngle: CGFloat, zoomScale: CGFloat, maskPath: UIBezierPath, applyMaskToCroppedImage: Bool) -> UIImage {
         var cropRect = cropRect0
         
         // Step 1: check and correct the crop rect.
@@ -931,7 +926,7 @@ class RSKImageCropViewController: UIViewController, UIGestureRecognizerDelegate{
         }
     }
 
-    func cropImage() {
+    fileprivate func cropImage() {
         guard let originalImage = originalImage else { return }
         
         delegate?.willCropImage(originalImage)
@@ -952,14 +947,13 @@ class RSKImageCropViewController: UIViewController, UIGestureRecognizerDelegate{
         }
     }
 
-    func cancelCrop() {
+    fileprivate func cancelCrop() {
         delegate?.didCancelCrop()
     }
 
     // #pragma mark - UIGestureRecognizerDelegate
 
-    func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer) -> Bool {
+    public func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer) -> Bool {
         return true
     }
-
 }

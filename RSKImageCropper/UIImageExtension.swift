@@ -96,7 +96,7 @@ extension UIImage {
         return self
     }
 
-    func rotateByAngle(angleInRadians: CGFloat) -> UIImage {
+    public func rotateByAngle(angleInRadians: CGFloat) -> UIImage {
         let contextSize = size
         
         UIGraphicsBeginImageContextWithOptions(contextSize, false, self.scale)
