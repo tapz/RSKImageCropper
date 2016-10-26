@@ -1,0 +1,965 @@
+//
+// RSKImageCropViewController.swift
+//
+// Copyright (c) 2014-present Ruslan Skorb, http://ruslanskorb.com/
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+// THE SOFTWARE.
+//
+
+import UIKit
+
+enum RSKImageCropMode: Int {
+    case circle = 0
+    case square = 1
+    case custom = 2
+}
+
+let kResetAnimationDuration = CGFloat(0.4)
+let kLayoutImageScrollViewAnimationDuration = CGFloat(0.25)
+
+// K is a constant such that the accumulated error of our floating-point computations is definitely bounded by K units in the last place.
+#if arch(x86_64) || CPU_TYPE_ARM64
+    let kK = CGFloat(9)
+#else
+    let kK = CGFloat(0)
+#endif
+
+/**
+ The `RSKImageCropViewControllerDataSource` protocol is adopted by an object that provides a custom rect and a custom path for the mask.
+ */
+protocol RSKImageCropViewControllerDataSource: class {
+
+    /**
+     Asks the data source a custom rect for the mask.
+     
+     @return A custom rect for the mask.
+     
+     @discussion Only valid if `cropMode` is `RSKImageCropModeCustom`.
+     */
+    var customMaskRect: CGRect { get }
+
+    /**
+     Asks the data source a custom path for the mask.
+     
+     @return A custom path for the mask.
+     
+     @discussion Only valid if `cropMode` is `RSKImageCropModeCustom`.
+     */
+    var customMaskPath: UIBezierPath { get }
+
+    /**
+     Asks the data source a custom rect in which the image can be moved.
+     
+     @return A custom rect in which the image can be moved.
+     
+     @discussion Only valid if `cropMode` is `RSKImageCropModeCustom`. If you want to support the rotation  when `cropMode` is `RSKImageCropModeCustom` you must implement it. Will be marked as `required` in version `2.0.0`.
+     */
+    var customMovementRect: CGRect { get }
+
+}
+
+/**
+ The `RSKImageCropViewControllerDelegate` protocol defines messages sent to a image crop view controller delegate when crop image was canceled or the original image was cropped.
+ */
+protocol RSKImageCropViewControllerDelegate: class {
+
+    /**
+     Tells the delegate that crop image has been canceled.
+     */
+    func didCancelCrop()
+
+    /**
+     Tells the delegate that the original image will be cropped.
+     */
+    func willCropImage(_ originalImage: UIImage)
+
+    /**
+     Tells the delegate that the original image has been cropped. Additionally provides a crop rect used to produce image.
+     */
+    func didCropImage(_ croppedImage: UIImage, usingCropRect cropRect: CGRect)
+
+    /**
+     Tells the delegate that the original image has been cropped. Additionally provides a crop rect and a rotation angle used to produce image.
+     */
+    func didCropImage(_ croppedImage: UIImage, usingCropRect cropRect: CGRect, rotationAngle: CGFloat)
+
+}
+
+class RSKImageCropViewController: UIViewController, UIGestureRecognizerDelegate{
+    lazy var imageScrollView: RSKImageScrollView = {
+        let view = RSKImageScrollView(frame: .zero)
+        view.clipsToBounds = false
+        view.isAspectFill = self.isAvoidEmptySpaceAroundImage
+        return view
+    }()
+
+    lazy var overlayView: RSKTouchView = {
+        let view = RSKTouchView()
+        view.receiver = self.imageScrollView
+        view.layer.addSublayer(self.maskLayer)
+        return view
+    }()
+
+    lazy var maskLayer: CAShapeLayer = {
+        let layer = CAShapeLayer()
+        layer.fillRule = kCAFillRuleEvenOdd
+        layer.fillColor = self.maskLayerColor.cgColor
+        layer.lineWidth = self.maskLayerLineWidth
+        layer.strokeColor = self.maskLayerStrokeColor?.cgColor ?? UIColor.black.cgColor
+        return layer
+    }()
+
+    let maskLayerColor = UIColor(red: 0.0, green: 0.0, blue: 0.0, alpha: 0.7)
+
+    lazy var moveAndScaleLabel: UILabel = {
+        let label = UILabel()
+        label.translatesAutoresizingMaskIntoConstraints = false
+        label.backgroundColor = UIColor.clear
+        label.text = RSKLocalizedString("Move and Scale", "Move and Scale label")
+        label.textColor = UIColor.white
+        label.isOpaque = false
+        return label
+    }()
+
+    lazy var cancelButton: UIButton = {
+        let button = UIButton()
+        button.translatesAutoresizingMaskIntoConstraints = false
+        button.setTitle(RSKLocalizedString("Cancel", "Cancel button"), for: .normal)
+        button.addTarget(self, action: #selector(onCancelButtonTouch), for: .touchUpInside)
+        button.isOpaque = false
+        return button
+    }()
+
+    lazy var chooseButton: UIButton = {
+        let button = UIButton()
+        button.translatesAutoresizingMaskIntoConstraints = false
+        button.setTitle(RSKLocalizedString("Choose", "Choose button"), for: .normal)
+        button.addTarget(self, action: #selector(onChooseButtonTouch), for: .touchUpInside)
+        button.isOpaque = false
+        return button
+    }()
+
+    lazy var doubleTapGestureRecognizer: UITapGestureRecognizer = {
+        let recognizer = UITapGestureRecognizer(target: self, action: #selector(handleDoubleTap))
+        recognizer.delaysTouchesEnded = false
+        recognizer.numberOfTapsRequired = 2
+        recognizer.delegate = self
+        return recognizer
+    }()
+
+    lazy var rotationGestureRecognizer: UIRotationGestureRecognizer = {
+        let recognizer = UIRotationGestureRecognizer(target: self, action: #selector(handleRotation))
+        recognizer.delaysTouchesEnded = false
+        recognizer.delegate = self
+        recognizer.isEnabled = self.isRotationEnabled
+        return recognizer
+    }()
+
+    var isOriginalNavigationControllerNavigationBarHidden = false
+    var originalNavigationControllerNavigationBarShadowImage: UIImage?
+    var originalNavigationControllerViewBackgroundColor: UIColor?
+    var isOriginalStatusBarHidden = false
+
+    var maskRect = CGRect.zero
+    var maskPath = UIBezierPath() {
+        didSet {
+            let clipPath = UIBezierPath(rect: rectForClipPath)
+            clipPath.append(maskPath)
+            clipPath.usesEvenOddFillRule = true
+            
+            let pathAnimation = CABasicAnimation(keyPath: "path")
+            pathAnimation.duration = CATransaction.animationDuration()
+            pathAnimation.timingFunction = CATransaction.animationTimingFunction()
+            self.maskLayer.add(pathAnimation, forKey: "path")
+            
+            self.maskLayer.path = clipPath.cgPath
+        }
+    }
+
+    var didSetupConstraints = false
+    var moveAndScaleLabelTopConstraint = NSLayoutConstraint()
+    var cancelButtonBottomConstraint = NSLayoutConstraint()
+    var cancelButtonLeadingConstraint = NSLayoutConstraint()
+    var chooseButtonBottomConstraint = NSLayoutConstraint()
+    var chooseButtonTrailingConstraint = NSLayoutConstraint()
+
+    var isAvoidEmptySpaceAroundImage = false
+    var isApplyMaskToCroppedImage = false
+    var maskLayerLineWidth = CGFloat(1.0)
+    var isRotationEnabled = false
+    var cropMode = RSKImageCropMode.circle
+    
+    var portraitCircleMaskRectInnerEdgeInset = CGFloat(15.0)
+    var portraitSquareMaskRectInnerEdgeInset = CGFloat(20.0)
+    var portraitMoveAndScaleLabelTopAndCropViewTopVerticalSpace = CGFloat(64.0)
+    var portraitCropViewBottomAndCancelButtonBottomVerticalSpace = CGFloat(21.0)
+    var portraitCropViewBottomAndChooseButtonBottomVerticalSpace = CGFloat(21.0)
+    var portraitCancelButtonLeadingAndCropViewLeadingHorizontalSpace = CGFloat(13.0)
+    var portraitCropViewTrailingAndChooseButtonTrailingHorizontalSpace = CGFloat(13.0)
+    
+    var landscapeCircleMaskRectInnerEdgeInset = CGFloat(45.0)
+    var landscapeSquareMaskRectInnerEdgeInset = CGFloat(45.0)
+    var landscapeMoveAndScaleLabelTopAndCropViewTopVerticalSpace = CGFloat(12.0)
+    var landscapeCropViewBottomAndCancelButtonBottomVerticalSpace = CGFloat(12.0)
+    var landscapeCropViewBottomAndChooseButtonBottomVerticalSpace = CGFloat(12.0)
+    var landscapeCancelButtonLeadingAndCropViewLeadingHorizontalSpace = CGFloat(13.0)
+    var landscapeCropViewTrailingAndChooseButtonTrailingHorizontalSpace = CGFloat(13.0)
+
+    var originalImage: UIImage? {
+        didSet {
+            if self.isViewLoaded && self.view.window != nil {
+                displayImage()
+            }
+        }
+    }
+    
+    weak var dataSource: RSKImageCropViewControllerDataSource?
+    weak var delegate: RSKImageCropViewControllerDelegate?
+
+    /// -----------------------------------
+    /// @name Accessing the Mask Attributes
+    /// -----------------------------------
+
+    /**
+     The color to fill the stroked outline of the path of the mask layer, or nil for no stroking. Default valus is nil.
+     */
+    var maskLayerStrokeColor: UIColor?
+
+    //MARK: - Lifecycle
+
+    init() {
+        super.init(nibName: nil, bundle: nil)
+    }
+
+    convenience init(image: UIImage) {
+        self.init()
+        self.originalImage = image
+    }
+
+    convenience init(image: UIImage, cropMode: RSKImageCropMode) {
+        self.init(image: image)
+        self.cropMode = cropMode
+    }
+    
+    required init?(coder aDecoder: NSCoder) {
+        super.init(coder: aDecoder)
+    }
+
+    override var prefersStatusBarHidden: Bool {
+        return true
+    }
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        
+        edgesForExtendedLayout = []
+        automaticallyAdjustsScrollViewInsets = false
+        
+        view.backgroundColor = UIColor.black
+        view.clipsToBounds = true
+        
+        view.addSubview(imageScrollView)
+        view.addSubview(overlayView)
+        view.addSubview(moveAndScaleLabel)
+        view.addSubview(cancelButton)
+        view.addSubview(chooseButton)
+        
+        view.addGestureRecognizer(doubleTapGestureRecognizer)
+        view.addGestureRecognizer(rotationGestureRecognizer)
+    }
+    
+    var isAppExtension: Bool {
+        if let exePath = Bundle.main.executablePath {
+            return exePath.contains(".appex")
+        }
+        
+        return false
+    }
+
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        
+        if !isAppExtension {
+            isOriginalStatusBarHidden = UIApplication.shared.isStatusBarHidden
+            UIApplication.shared.isStatusBarHidden = true
+        }
+        
+        if let navi = navigationController {
+            isOriginalNavigationControllerNavigationBarHidden = navi.isNavigationBarHidden
+            navi.setNavigationBarHidden(true, animated: false)
+        
+            originalNavigationControllerNavigationBarShadowImage = navi.navigationBar.shadowImage
+            navi.navigationBar.shadowImage = nil
+        }
+    }
+
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        
+        if let navi = navigationController {
+            originalNavigationControllerViewBackgroundColor = navi.view.backgroundColor
+            navi.view.backgroundColor = UIColor.black
+        }
+    }
+
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        
+        if !isAppExtension {
+            UIApplication.shared.isStatusBarHidden = isOriginalStatusBarHidden
+        }
+        
+        if let navi = navigationController {
+            navi.setNavigationBarHidden(isOriginalNavigationControllerNavigationBarHidden, animated:animated)
+            navi.navigationBar.shadowImage = originalNavigationControllerNavigationBarShadowImage
+            navi.view.backgroundColor = originalNavigationControllerViewBackgroundColor
+        }
+    }
+
+    override func viewWillLayoutSubviews() {
+        super.viewWillLayoutSubviews()
+        
+        updateMaskRect()
+        layoutImageScrollView()
+        layoutOverlayView()
+        updateMaskPath()
+        view.setNeedsUpdateConstraints()
+    }
+
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        
+        if imageScrollView.zoomView == nil {
+            displayImage()
+        }
+    }
+
+    override func updateViewConstraints() {
+        super.updateViewConstraints()
+        
+        if !didSetupConstraints {
+            // ---------------------------
+            // The label "Move and Scale".
+            // ---------------------------
+            
+            let constraint = NSLayoutConstraint(
+                item: self.moveAndScaleLabel,
+                attribute: .centerX,
+                relatedBy: .equal,
+                toItem:self.view,
+                attribute: .centerX,
+                multiplier: 1.0,
+                constant: 0.0)
+                
+            view.addConstraint(constraint)
+            
+            var constant = self.portraitMoveAndScaleLabelTopAndCropViewTopVerticalSpace
+            self.moveAndScaleLabelTopConstraint = NSLayoutConstraint(
+                item: self.moveAndScaleLabel,
+                attribute: .top,
+                relatedBy: .equal,
+                toItem: self.view,
+                attribute: .top,
+                multiplier: 1.0,
+                constant: constant)
+                
+            view.addConstraint(self.moveAndScaleLabelTopConstraint)
+            
+            // --------------------
+            // The button "Cancel".
+            // --------------------
+            
+            constant = self.portraitCancelButtonLeadingAndCropViewLeadingHorizontalSpace
+            self.cancelButtonLeadingConstraint = NSLayoutConstraint(
+                item: self.cancelButton,
+                attribute: .leading,
+                relatedBy: .equal,
+                toItem: self.view,
+                attribute: .leading,
+                multiplier: 1.0,
+                constant: constant)
+                
+            self.view.addConstraint(self.cancelButtonLeadingConstraint)
+            
+            constant = self.portraitCropViewBottomAndCancelButtonBottomVerticalSpace
+            self.cancelButtonBottomConstraint = NSLayoutConstraint(
+                item: view,
+                attribute: .bottom,
+                relatedBy: .equal,
+                toItem: self.cancelButton,
+                attribute: .bottom,
+                multiplier: 1.0,
+                constant: constant)
+                
+            view.addConstraint(cancelButtonBottomConstraint)
+            
+            // --------------------
+            // The button "Choose".
+            // --------------------
+            
+            constant = self.portraitCropViewTrailingAndChooseButtonTrailingHorizontalSpace
+            self.chooseButtonTrailingConstraint = NSLayoutConstraint(
+                item: view,
+                attribute: .trailing,
+                relatedBy: .equal,
+                toItem: self.chooseButton,
+                attribute: .trailing,
+                multiplier: 1.0,
+                constant: constant)
+                
+            view.addConstraint(chooseButtonTrailingConstraint)
+            
+            constant = self.portraitCropViewBottomAndChooseButtonBottomVerticalSpace
+            self.chooseButtonBottomConstraint = NSLayoutConstraint(
+                item: view,
+                attribute: .bottom,
+                relatedBy: .equal,
+                toItem: self.chooseButton,
+                attribute: .bottom,
+                multiplier: 1.0,
+                constant: constant)
+                
+            view.addConstraint(chooseButtonBottomConstraint)
+            
+            self.didSetupConstraints = true
+        } else {
+            if isPortraitInterfaceOrientation() {
+                self.moveAndScaleLabelTopConstraint.constant = self.portraitMoveAndScaleLabelTopAndCropViewTopVerticalSpace
+                self.cancelButtonBottomConstraint.constant = self.portraitCropViewBottomAndCancelButtonBottomVerticalSpace
+                self.cancelButtonLeadingConstraint.constant = self.portraitCancelButtonLeadingAndCropViewLeadingHorizontalSpace
+                self.chooseButtonBottomConstraint.constant = self.portraitCropViewBottomAndChooseButtonBottomVerticalSpace
+                self.chooseButtonTrailingConstraint.constant = self.portraitCropViewTrailingAndChooseButtonTrailingHorizontalSpace
+            } else {
+                self.moveAndScaleLabelTopConstraint.constant = self.landscapeMoveAndScaleLabelTopAndCropViewTopVerticalSpace
+                self.cancelButtonBottomConstraint.constant = self.landscapeCropViewBottomAndCancelButtonBottomVerticalSpace
+                self.cancelButtonLeadingConstraint.constant = self.landscapeCancelButtonLeadingAndCropViewLeadingHorizontalSpace
+                self.chooseButtonBottomConstraint.constant = self.landscapeCropViewBottomAndChooseButtonBottomVerticalSpace
+                self.chooseButtonTrailingConstraint.constant = self.landscapeCropViewTrailingAndChooseButtonTrailingHorizontalSpace
+            }
+        }
+    }
+
+    // #pragma mark - Custom Accessors
+
+    var cropRect: CGRect {
+        var cropRect = CGRect.zero
+        let zoomScale = 1.0 / imageScrollView.zoomScale
+        
+        cropRect.origin.x = round(imageScrollView.contentOffset.x * zoomScale)
+        cropRect.origin.y = round(imageScrollView.contentOffset.y * zoomScale)
+        cropRect.size.width = imageScrollView.bounds.width * zoomScale
+        cropRect.size.height = imageScrollView.bounds.height * zoomScale
+        
+        let width = cropRect.width
+        let height = cropRect.height
+        let ceilWidth = ceil(width)
+        let ceilHeight = ceil(height)
+        
+        if fabs(ceilWidth - width) < pow(10, kK) * RSK_EPSILON * fabs(ceilWidth + width) || fabs(ceilWidth - width) < RSK_MIN ||
+            fabs(ceilHeight - height) < pow(10, kK) * RSK_EPSILON * fabs(ceilHeight + height) || fabs(ceilHeight - height) < RSK_MIN
+        {
+            cropRect.size.width = ceilWidth
+            cropRect.size.height = ceilHeight
+        } else {
+            cropRect.size.width = floor(width)
+            cropRect.size.height = floor(height)
+        }
+        
+        return cropRect
+    }
+
+    var rectForClipPath: CGRect {
+        if maskLayerStrokeColor == nil {
+            return overlayView.frame
+        } else {
+            let maskLayerLineHalfWidth = maskLayerLineWidth / 2.0
+            return overlayView.frame.insetBy(dx: -maskLayerLineHalfWidth, dy: -maskLayerLineHalfWidth)
+        }
+    }
+
+    var rectForMaskPath: CGRect {
+        if maskLayerStrokeColor == nil {
+            return maskRect
+        } else {
+            let maskLayerLineHalfWidth = self.maskLayerLineWidth / 2.0
+            return maskRect.insetBy(dx: maskLayerLineHalfWidth, dy: maskLayerLineHalfWidth)
+        }
+    }
+
+    var rotationAngle: CGFloat {
+        get {
+            let transform = imageScrollView.transform
+            return atan2(transform.b, transform.a)
+        }
+        
+        set(rotationAngle) {
+            if self.rotationAngle != rotationAngle {
+                let rotation = (rotationAngle - self.rotationAngle)
+                let transform = self.imageScrollView.transform.rotated(by: rotation)
+                self.imageScrollView.transform = transform
+            }
+        }
+    }
+
+    var zoomScale: CGFloat {
+        return imageScrollView.zoomScale
+    }
+
+    func setAvoidEmptySpaceAroundImage(avoidEmptySpaceAroundImage: Bool) {
+        if self.isAvoidEmptySpaceAroundImage != avoidEmptySpaceAroundImage {
+            self.isAvoidEmptySpaceAroundImage = avoidEmptySpaceAroundImage
+            
+            self.imageScrollView.isAspectFill = avoidEmptySpaceAroundImage
+        }
+    }
+
+    func setCropMode(_ cropMode: RSKImageCropMode) {
+        if self.cropMode != cropMode {
+            self.cropMode = cropMode
+            
+            if self.imageScrollView.zoomView != nil {
+                reset(animated: false)
+            }
+        }
+    }
+
+    func setRotationEnabled(rotationEnabled: Bool) {
+        if self.isRotationEnabled != rotationEnabled {
+            isRotationEnabled = rotationEnabled
+            rotationGestureRecognizer.isEnabled = rotationEnabled
+        }
+    }
+
+    func setZoomScale(_ zoomScale: CGFloat) {
+        self.imageScrollView.zoomScale = zoomScale
+    }
+
+    // #pragma mark - Action handling
+
+    func onCancelButtonTouch() {
+        cancelCrop()
+    }
+
+    func onChooseButtonTouch() {
+        cropImage()
+    }
+
+    func handleDoubleTap(gestureRecognizer: UITapGestureRecognizer) {
+        reset(animated: true)
+    }
+
+    func handleRotation(gestureRecognizer: UIRotationGestureRecognizer) {
+        rotationAngle += gestureRecognizer.rotation
+        gestureRecognizer.rotation = 0
+        
+        if gestureRecognizer.state == .ended {
+            UIView.animate(
+                withDuration: TimeInterval(kLayoutImageScrollViewAnimationDuration),
+                delay: 0.0,
+                options: .beginFromCurrentState,
+                animations: {
+                    self.layoutImageScrollView()
+                },
+                completion:nil)
+        }
+    }
+
+    //#pragma mark - Public
+
+    func isPortraitInterfaceOrientation() -> Bool {
+        return view.bounds.height > self.view.bounds.width
+    }
+
+    //#pragma mark - Private
+
+    func reset(animated: Bool) {
+        if animated {
+            UIView.beginAnimations("rsk_reset", context: nil)
+            UIView.setAnimationCurve(.easeInOut)
+            UIView.setAnimationDuration(TimeInterval(kResetAnimationDuration))
+            UIView.setAnimationBeginsFromCurrentState(true)
+        }
+        
+        resetRotation()
+        resetFrame()
+        resetZoomScale()
+        resetContentOffset()
+        
+        if animated {
+            UIView.commitAnimations()
+        }
+    }
+
+    func resetContentOffset() {
+        guard let zoomView = imageScrollView.zoomView else { return }
+        
+        let boundsSize = imageScrollView.bounds.size
+        let frameToCenter = zoomView.frame
+        
+        var contentOffset = CGPoint(x: 0.0, y: 0.0)
+        if frameToCenter.width > boundsSize.width {
+            contentOffset.x = (frameToCenter.width - boundsSize.width) * 0.5
+        } else {
+            contentOffset.x = 0
+        }
+        if (frameToCenter.height > boundsSize.height) {
+            contentOffset.y = (frameToCenter.height - boundsSize.height) * 0.5
+        } else {
+            contentOffset.y = 0
+        }
+        
+        self.imageScrollView.contentOffset = contentOffset
+    }
+
+    func resetFrame() {
+        layoutImageScrollView()
+    }
+
+    func resetRotation() {
+        rotationAngle = 0.0
+    }
+
+    func resetZoomScale() {
+        guard let originalImage = originalImage else { return }
+    
+        var zoomScale = CGFloat(0.0)
+        if view.bounds.width > view.bounds.height {
+            zoomScale = view.bounds.height / originalImage.size.height
+        } else {
+            zoomScale = view.bounds.width / originalImage.size.width
+        }
+        self.imageScrollView.zoomScale = zoomScale
+    }
+
+    func intersectionPointsOfLineSegment(lineSegment: RSKLineSegment, withRect rect: CGRect) -> [CGPoint] {
+        let top = RSKLineSegmentMake(start: CGPoint(x: rect.minX, y: rect.minY),
+                                     end: CGPoint(x: rect.maxX, y: rect.minY))
+        
+        let right = RSKLineSegmentMake(start: CGPoint(x: rect.maxX, y: rect.minY),
+                                       end: CGPoint(x: rect.maxX, y: rect.maxY))
+        
+        let bottom = RSKLineSegmentMake(start: CGPoint(x: rect.minX, y: rect.maxY),
+                                        end: CGPoint(x: rect.maxX, y: rect.maxY))
+        
+        let left = RSKLineSegmentMake(start: CGPoint(x: rect.minX, y: rect.minY),
+                                      end: CGPoint(x: rect.minX, y: rect.maxY))
+        
+        let p0 = RSKLineSegmentIntersection(ls1: top, ls2: lineSegment)
+        let p1 = RSKLineSegmentIntersection(ls1: right, ls2: lineSegment)
+        let p2 = RSKLineSegmentIntersection(ls1: bottom, ls2: lineSegment)
+        let p3 = RSKLineSegmentIntersection(ls1: left, ls2: lineSegment)
+        
+        var intersectionPoints = [CGPoint]()
+        if !RSKPointIsNull(p0) {
+            intersectionPoints.append(p0)
+        }
+        if !RSKPointIsNull(p1) {
+            intersectionPoints.append(p1)
+        }
+        if !RSKPointIsNull(p2) {
+            intersectionPoints.append(p2)
+        }
+        if !RSKPointIsNull(p3) {
+            intersectionPoints.append(p3)
+        }
+        
+        return intersectionPoints
+    }
+
+    func displayImage() {
+        guard let originalImage = originalImage else { return }
+        imageScrollView.displayImage(originalImage)
+        reset(animated: false)
+    }
+
+    func layoutImageScrollView() {
+        guard let dataSource = dataSource else { return }
+    
+        var frame = CGRect.zero
+        
+        // The bounds of the image scroll view should always fill the mask area.
+        switch cropMode {
+            case .square:
+                if rotationAngle == 0.0 {
+                    frame = maskRect
+                } else {
+                    // Step 1: Rotate the left edge of the initial rect of the image scroll view clockwise around the center by `rotationAngle`.
+                    let initialRect = self.maskRect
+                    let rotationAngle = self.rotationAngle
+                    
+                    let leftTopPoint = CGPoint(x: initialRect.origin.x, y: initialRect.origin.y)
+                    let leftBottomPoint = CGPoint(x: initialRect.origin.x, y: initialRect.origin.y + initialRect.size.height)
+                    let leftLineSegment = RSKLineSegmentMake(start: leftTopPoint, end: leftBottomPoint)
+                    
+                    let pivot = RSKRectCenterPoint(rect: initialRect)
+                    
+                    var alpha = CGFloat(fabs(rotationAngle))
+                    let rotatedLeftLineSegment = RSKLineSegmentRotateAroundPoint(line: leftLineSegment, pivot: pivot, angle: alpha)
+                    
+                    // Step 2: Find the points of intersection of the rotated edge with the initial rect.
+                    let points = intersectionPointsOfLineSegment(lineSegment: rotatedLeftLineSegment, withRect: initialRect)
+                    
+                    // Step 3: If the number of intersection points more than one
+                    // then the bounds of the rotated image scroll view does not completely fill the mask area.
+                    // Therefore, we need to update the frame of the image scroll view.
+                    // Otherwise, we can use the initial rect.
+                    if (points.count > 1) {
+                        // We have a right triangle.
+                        
+                        // Step 4: Calculate the altitude of the right triangle.
+                        if ((alpha > CGFloat(M_PI_2)) && (alpha < CGFloat.pi)) {
+                            alpha = alpha - CGFloat(M_PI_2)
+                        } else if ((alpha > (CGFloat.pi + CGFloat(M_PI_2))) && (alpha < (CGFloat.pi + CGFloat.pi))) {
+                            alpha = alpha - (CGFloat.pi + CGFloat(M_PI_2))
+                        }
+                        let sinAlpha = sin(alpha)
+                        let cosAlpha = cos(alpha)
+                        let hypotenuse = RSKPointDistance(p1: points[0], p2: points[1])
+                        let altitude = hypotenuse * sinAlpha * cosAlpha
+                        
+                        // Step 5: Calculate the target width.
+                        let initialWidth = initialRect.width
+                        let targetWidth = initialWidth + altitude * 2
+                        
+                        // Step 6: Calculate the target frame.
+                        let scale = targetWidth / initialWidth
+                        let center = RSKRectCenterPoint(rect: initialRect)
+                        frame = RSKRectScaleAroundPoint(rect0: initialRect, point: center, sx: scale, sy: scale)
+                        
+                        // Step 7: Avoid floats.
+                        frame.origin.x = round(frame.minX)
+                        frame.origin.y = round(frame.minY)
+                        frame = frame.integral
+                    } else {
+                        // Step 4: Use the initial rect.
+                        frame = initialRect
+                    }
+                }
+            case .circle:
+                frame = self.maskRect
+            case .custom:
+                frame = dataSource.customMovementRect
+                // Will be changed to `CGRectNull` in version `2.0.0`.
+                //frame = self.maskRect
+        }
+        
+        let transform = self.imageScrollView.transform
+        self.imageScrollView.transform = .identity
+        self.imageScrollView.frame = frame
+        self.imageScrollView.transform = transform
+    }
+
+    func layoutOverlayView() {
+        let frame = CGRect(x: 0, y: 0, width: view.bounds.width * 2, height: view.bounds.height * 2)
+        self.overlayView.frame = frame
+    }
+
+    func updateMaskRect() {
+        guard let dataSource = dataSource else { return }
+    
+        switch cropMode {
+            case .circle:
+                let viewWidth = view.bounds.width
+                let viewHeight = view.bounds.height
+                
+                let diameter: CGFloat!
+                if isPortraitInterfaceOrientation() {
+                    diameter = min(viewWidth, viewHeight) - portraitCircleMaskRectInnerEdgeInset * 2
+                } else {
+                    diameter = min(viewWidth, viewHeight) - landscapeCircleMaskRectInnerEdgeInset * 2
+                }
+                
+                let maskSize = CGSize(width: diameter, height: diameter)
+                
+                self.maskRect = CGRect(x: (viewWidth - maskSize.width) * 0.5,
+                                           y: (viewHeight - maskSize.height) * 0.5,
+                                           width: maskSize.width,
+                                           height: maskSize.height)
+            case .square:
+                let viewWidth = view.bounds.width
+                let viewHeight = view.bounds.height
+                
+                let length: CGFloat!
+                if isPortraitInterfaceOrientation() {
+                    length = min(viewWidth, viewHeight) - portraitSquareMaskRectInnerEdgeInset * 2
+                } else {
+                    length = min(viewWidth, viewHeight) - landscapeSquareMaskRectInnerEdgeInset * 2
+                }
+                
+                let maskSize = CGSize(width: length, height: length)
+                
+                self.maskRect = CGRect(x: (viewWidth - maskSize.width) * 0.5,
+                                           y: (viewHeight - maskSize.height) * 0.5,
+                                           width: maskSize.width,
+                                           height: maskSize.height)
+            case .custom:
+                maskRect = dataSource.customMaskRect
+        }
+    }
+
+    func updateMaskPath() {
+        guard let dataSource = dataSource else { return }
+    
+        switch cropMode {
+            case .circle:
+                maskPath = UIBezierPath(ovalIn: rectForMaskPath)
+            case .square:
+                maskPath = UIBezierPath(rect: rectForMaskPath)
+            case .custom:
+                maskPath = dataSource.customMaskPath
+        }
+    }
+
+    func croppedImage(image: UIImage, cropRect: CGRect, scale imageScale: CGFloat, orientation imageOrientation: UIImageOrientation) -> UIImage {
+        if image.images == nil {
+            if let croppedCGImage = image.cgImage!.cropping(to: cropRect) {
+                return UIImage(cgImage: croppedCGImage, scale:imageScale, orientation:imageOrientation)
+            }
+            
+            return UIImage()
+        } else {
+            let animatedImage = image
+            var croppedImages = [UIImage]()
+            for image in animatedImage.images! {
+                croppedImages.append(self.croppedImage(image: image, cropRect:cropRect, scale:imageScale, orientation:imageOrientation))
+            }
+            return UIImage.animatedImage(with: croppedImages, duration:image.duration)!
+        }
+    }
+
+    func croppedImage(image: UIImage, cropMode: RSKImageCropMode, cropRect cropRect0: CGRect, rotationAngle: CGFloat, zoomScale: CGFloat, maskPath: UIBezierPath, applyMaskToCroppedImage: Bool) -> UIImage {
+        var cropRect = cropRect0
+        
+        // Step 1: check and correct the crop rect.
+        let imageSize = image.size
+        let x = cropRect.minX
+        let y = cropRect.minY
+        let width = cropRect.width
+        let height = cropRect.height
+        
+        var imageOrientation = image.imageOrientation
+        if imageOrientation == .right || imageOrientation == .rightMirrored {
+            cropRect.origin.x = y
+            cropRect.origin.y = round(imageSize.width - cropRect.width - x)
+            cropRect.size.width = height
+            cropRect.size.height = width
+        } else if imageOrientation == .left || imageOrientation == .leftMirrored {
+            cropRect.origin.x = round(imageSize.height - cropRect.height - y)
+            cropRect.origin.y = x
+            cropRect.size.width = height
+            cropRect.size.height = width
+        } else if imageOrientation == .down || imageOrientation == .downMirrored {
+            cropRect.origin.x = round(imageSize.width - cropRect.width - x)
+            cropRect.origin.y = round(imageSize.height - cropRect.height - y)
+        }
+        
+        let imageScale = image.scale
+        cropRect = cropRect.applying(CGAffineTransform(scaleX: imageScale, y: imageScale))
+        
+        // Step 2: create an image using the data contained within the specified rect.
+        var croppedImage = self.croppedImage(image: image, cropRect:cropRect, scale:imageScale, orientation:imageOrientation)
+        
+        // Step 3: fix orientation of the cropped image.
+        croppedImage = croppedImage.fixOrientation()
+        imageOrientation = croppedImage.imageOrientation
+        
+        // Step 4: If current mode is `RSKImageCropModeSquare` and the image is not rotated
+        // or mask should not be applied to the image after cropping and the image is not rotated,
+        // we can return the cropped image immediately.
+        // Otherwise, we must further process the image.
+        if (cropMode == .square || !applyMaskToCroppedImage) && rotationAngle == 0.0 {
+            // Step 5: return the cropped image immediately.
+            return croppedImage
+        } else {
+            // Step 5: create a new context.
+            let maskSize = maskPath.bounds.integral.size
+            let contextSize = CGSize(width: ceil(maskSize.width / zoomScale),
+                                            height: ceil(maskSize.height / zoomScale))
+            UIGraphicsBeginImageContextWithOptions(contextSize, false, imageScale)
+            
+            defer {
+                UIGraphicsEndImageContext()
+            }
+            
+            // Step 6: apply the mask if needed.
+            if applyMaskToCroppedImage {
+                // 6a: scale the mask to the size of the crop rect.
+                let maskPathCopy = maskPath.copy() as! UIBezierPath
+                let scale = 1 / zoomScale
+                maskPathCopy.apply(CGAffineTransform(scaleX: scale, y: scale))
+                
+                // 6b: move the mask to the top-left.
+                let translation = CGPoint(x: -maskPathCopy.bounds.minX, y: -maskPathCopy.bounds.minY)
+                maskPathCopy.apply(CGAffineTransform(translationX: translation.x, y: translation.y))
+                
+                // 6c: apply the mask.
+                maskPathCopy.addClip()
+            }
+            
+            // Step 7: rotate the cropped image if needed.
+            if rotationAngle != 0 {
+                croppedImage = croppedImage.rotateByAngle(angleInRadians: rotationAngle)
+            }
+            
+            // Step 8: draw the cropped image.
+            let point = CGPoint(x: round((contextSize.width - croppedImage.size.width) * 0.5),
+                                        y: round((contextSize.height - croppedImage.size.height) * 0.5))
+            croppedImage.draw(at: point)
+            
+            // Step 9: get the cropped image affter processing from the context.
+            croppedImage = UIGraphicsGetImageFromCurrentImageContext()!
+            
+            // Step 10: return the cropped image affter processing.
+            
+            return UIImage(cgImage: croppedImage.cgImage!, scale: imageScale, orientation: imageOrientation)
+        }
+    }
+
+    func cropImage() {
+        guard let originalImage = originalImage else { return }
+        
+        delegate?.willCropImage(originalImage)
+        
+        DispatchQueue.global(qos: .default).async {
+            let croppedImage = self.croppedImage(
+                image: originalImage,
+                cropMode: self.cropMode,
+                cropRect: self.cropRect,
+                rotationAngle: self.rotationAngle,
+                zoomScale: self.imageScrollView.zoomScale,
+                maskPath: self.maskPath,
+                applyMaskToCroppedImage: self.isApplyMaskToCroppedImage)
+            
+            DispatchQueue.main.async {
+                self.delegate?.didCropImage(croppedImage, usingCropRect: self.cropRect, rotationAngle: self.rotationAngle)
+            }
+        }
+    }
+
+    func cancelCrop() {
+        delegate?.didCancelCrop()
+    }
+
+    // #pragma mark - UIGestureRecognizerDelegate
+
+    func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer) -> Bool {
+        return true
+    }
+
+}

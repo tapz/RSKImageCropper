@@ -1,5 +1,5 @@
 //
-// RSKImageCropper.h
+// RSKTouchView.swift
 //
 // Copyright (c) 2014-present Ruslan Skorb, http://ruslanskorb.com/
 //
@@ -22,23 +22,16 @@
 // THE SOFTWARE.
 //
 
-/**
- `RSKImageCropper` is an image cropper for iOS like in the Contacts app with support for landscape orientation.
- */
+import UIKit
 
-#import <Foundation/Foundation.h>
+class RSKTouchView: UIView {
+    weak var receiver = UIView()
 
-//! Project version number for RSKImageCropper.
-FOUNDATION_EXPORT double RSKImageCropperVersionNumber;
-
-//! Project version string for RSKImageCropper.
-FOUNDATION_EXPORT const unsigned char RSKImageCropperVersionString[];
-
-#import <RSKImageCropper/CGGeometry+RSKImageCropper.h>
-#import <RSKImageCropper/RSKImageCropViewController.h>
-#import <RSKImageCropper/RSKImageCropViewController+Protected.h>
-#import <RSKImageCropper/RSKImageScrollView.h>
-#import <RSKImageCropper/RSKInternalUtility.h>
-#import <RSKImageCropper/RSKTouchView.h>
-#import <RSKImageCropper/UIApplication+RSKImageCropper.h>
-#import <RSKImageCropper/UIImage+RSKImageCropper.h>
+    func hitTest(point pt: CGPoint, withEvent event: UIEvent) -> UIView? {
+        if point(inside: pt, with: event) {
+            return receiver
+        }
+        
+        return nil
+    }
+}
