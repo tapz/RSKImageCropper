@@ -47,7 +47,7 @@
 
 import UIKit
 
-// #pragma mark -
+// MARK: -
 
 class RSKImageScrollView: UIScrollView, UIScrollViewDelegate {
     var imageSize = CGSize.zero
@@ -78,7 +78,7 @@ class RSKImageScrollView: UIScrollView, UIScrollViewDelegate {
     }
 
     func setAspectFill(aspectFill: Bool) {
-        if self.isAspectFill != aspectFill {
+        if isAspectFill != aspectFill {
             isAspectFill = aspectFill
             
             if zoomView != nil {
@@ -92,7 +92,7 @@ class RSKImageScrollView: UIScrollView, UIScrollViewDelegate {
     }
 
     func setFrame(frame: CGRect) {
-        let sizeChanging = !frame.size.equalTo(self.frame.size)
+        let sizeChanging = frame.size != self.frame.size
         
         if sizeChanging {
             prepareToResize()
@@ -107,7 +107,7 @@ class RSKImageScrollView: UIScrollView, UIScrollViewDelegate {
         centerZoomView()
     }
 
-    // #pragma mark - UIScrollViewDelegate
+    // MARK: - UIScrollViewDelegate
 
     func viewForZooming(in scrollView: UIScrollView) -> UIView? {
         return zoomView
@@ -117,7 +117,7 @@ class RSKImageScrollView: UIScrollView, UIScrollViewDelegate {
         centerZoomView()
     }
 
-    // #pragma mark - Center zoomView within scrollView
+    // MARK: - Center zoomView within scrollView
 
     func centerZoomView() {
         // center zoomView as it becomes smaller than the size of the screen
@@ -133,11 +133,11 @@ class RSKImageScrollView: UIScrollView, UIScrollViewDelegate {
             }
             
             // center horizontally
-            if self.contentSize.width < bounds.width {
+            if contentSize.width < bounds.width {
                 left = (bounds.width - contentSize.width) * 0.5
             }
             
-            self.contentInset = UIEdgeInsetsMake(top, left, top, left)
+            contentInset = UIEdgeInsetsMake(top, left, top, left)
         } else {
             guard let zoomView = zoomView else { return }
         
@@ -161,7 +161,7 @@ class RSKImageScrollView: UIScrollView, UIScrollViewDelegate {
         }
     }
 
-    // #pragma mark - Configure scrollView to display new image
+    // MARK: - Configure scrollView to display new image
 
     func displayImage(_ image: UIImage) {
         // clear view for the previous image
@@ -180,11 +180,11 @@ class RSKImageScrollView: UIScrollView, UIScrollViewDelegate {
 
     func configureForImageSize(_ imageSize: CGSize) {
         self.imageSize = imageSize
-        self.contentSize = imageSize
+        contentSize = imageSize
         setMaxMinZoomScalesForCurrentBounds()
         setInitialZoomScale()
         setInitialContentOffset()
-        self.contentInset = .zero
+        contentInset = .zero
     }
 
     func setMaxMinZoomScalesForCurrentBounds() {
@@ -204,8 +204,8 @@ class RSKImageScrollView: UIScrollView, UIScrollViewDelegate {
         var maxScale = max(xScale, yScale)
         
         // Image must fit/fill the screen, even if its size is smaller.
-        let xImageScale = maxScale * self.imageSize.width / boundsSize.width
-        let yImageScale = maxScale * self.imageSize.height / boundsSize.width
+        let xImageScale = maxScale * imageSize.width / boundsSize.width
+        let yImageScale = maxScale * imageSize.height / boundsSize.width
         var maxImageScale = max(xImageScale, yImageScale)
         
         maxImageScale = max(minScale, maxImageScale)
@@ -249,10 +249,9 @@ class RSKImageScrollView: UIScrollView, UIScrollViewDelegate {
         setContentOffset(contentOffset, animated: false)
     }
 
-    //#pragma mark -
-    //#pragma mark Methods called during rotation to preserve the zoomScale and the visible portion of the image
+    // MARK: Methods called during rotation to preserve the zoomScale and the visible portion of the image
 
-    //#pragma mark - Rotation support
+    // MARK: - Rotation support
 
     func prepareToResize() {
         let boundsCenter = CGPoint(x: bounds.midX, y: bounds.midY)
@@ -282,8 +281,9 @@ class RSKImageScrollView: UIScrollView, UIScrollViewDelegate {
         let boundsCenter = convert(pointToCenterAfterResize, from: zoomView)
 
         // 2b: calculate the content offset that would yield that center point
-        var offset = CGPoint(x: boundsCenter.x - bounds.size.width / 2.0,
-                                     y: boundsCenter.y - bounds.size.height / 2.0)
+        var offset = CGPoint(
+            x: boundsCenter.x - bounds.size.width / 2.0,
+            y: boundsCenter.y - bounds.size.height / 2.0)
 
         // 2c: restore offset, adjusted to be within the allowable range
         let maxOffset = maximumContentOffset

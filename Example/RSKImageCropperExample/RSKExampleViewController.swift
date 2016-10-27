@@ -32,52 +32,52 @@ class RSKExampleViewController: UIViewController, RSKImageCropViewControllerDele
     var addPhotoButton = UIButton()
     var didSetupConstraints = false
 
-    // #pragma mark - Lifecycle
+    // MARK: - Lifecycle
 
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        self.edgesForExtendedLayout = []
+        edgesForExtendedLayout = []
         
-        self.navigationItem.title = "RSKImageCropper"
+        navigationItem.title = "RSKImageCropper"
         
         // ---------------------------
         // Add the frame of the photo.
         // ---------------------------
         
-        self.photoFrameView.backgroundColor = UIColor(red:182/255.0, green:182/255.0, blue:187/255.0, alpha:1.0)
-        self.photoFrameView.translatesAutoresizingMaskIntoConstraints = false
-        self.photoFrameView.layer.masksToBounds = true
-        self.photoFrameView.layer.cornerRadius = (kPhotoDiameter + kPhotoFrameViewPadding) / 2
-        self.view.addSubview(self.photoFrameView)
+        photoFrameView.backgroundColor = UIColor(red: 182/255.0, green: 182/255.0, blue: 187/255.0, alpha: 1.0)
+        photoFrameView.translatesAutoresizingMaskIntoConstraints = false
+        photoFrameView.layer.masksToBounds = true
+        photoFrameView.layer.cornerRadius = (kPhotoDiameter + kPhotoFrameViewPadding) / 2
+        view.addSubview(photoFrameView)
         
         // ---------------------------
         // Add the button "add photo".
         // ---------------------------
         
-        self.addPhotoButton.backgroundColor = UIColor.white
-        self.addPhotoButton.translatesAutoresizingMaskIntoConstraints = false
-        self.addPhotoButton.layer.masksToBounds = true
-        self.addPhotoButton.layer.cornerRadius = kPhotoDiameter / 2
-        self.addPhotoButton.imageView?.contentMode = .scaleAspectFit
-        self.addPhotoButton.titleLabel?.lineBreakMode = .byWordWrapping
-        self.addPhotoButton.titleLabel?.textAlignment = .center
-        self.addPhotoButton.setTitle("add\nphoto", for: .normal)
-        self.addPhotoButton.setTitleColor(UIColor(red: 0/255.0, green: 122/255.0, blue: 255/255.0, alpha: 1.0), for: .normal)
-        self.addPhotoButton.addTarget(self, action: #selector(onAddPhotoButtonTouch), for: .touchUpInside)
-        self.view.addSubview(self.addPhotoButton)
+        addPhotoButton.backgroundColor = UIColor.white
+        addPhotoButton.translatesAutoresizingMaskIntoConstraints = false
+        addPhotoButton.layer.masksToBounds = true
+        addPhotoButton.layer.cornerRadius = kPhotoDiameter / 2
+        addPhotoButton.imageView?.contentMode = .scaleAspectFit
+        addPhotoButton.titleLabel?.lineBreakMode = .byWordWrapping
+        addPhotoButton.titleLabel?.textAlignment = .center
+        addPhotoButton.setTitle("add\nphoto", for: .normal)
+        addPhotoButton.setTitleColor(UIColor(red: 0/255.0, green: 122/255.0, blue: 255/255.0, alpha: 1.0), for: .normal)
+        addPhotoButton.addTarget(self, action: #selector(onAddPhotoButtonTouch), for: .touchUpInside)
+        view.addSubview(addPhotoButton)
         
         // ----------------
         // Add constraints.
         // ----------------
         
-        self.view.setNeedsUpdateConstraints()
+        view.setNeedsUpdateConstraints()
     }
 
     override func updateViewConstraints() {
         super.updateViewConstraints()
         
-        if self.didSetupConstraints {
+        if didSetupConstraints {
             return
         }
         
@@ -85,76 +85,125 @@ class RSKExampleViewController: UIViewController, RSKImageCropViewControllerDele
         // The frame of the photo.
         // ---------------------------
         
-        var constraint = NSLayoutConstraint(item: self.photoFrameView, attribute:.width, relatedBy:.equal,
-                                                                         toItem:nil, attribute:.notAnAttribute, multiplier:1.0,
-                                                                       constant:(kPhotoDiameter + kPhotoFrameViewPadding))
-        self.photoFrameView.addConstraint(constraint)
+        var constraint = NSLayoutConstraint(
+            item: photoFrameView,
+            attribute:.width,
+            relatedBy: .equal,
+            toItem: nil,
+            attribute: .notAnAttribute,
+            multiplier: 1.0,
+            constant: (kPhotoDiameter + kPhotoFrameViewPadding))
         
-        constraint = NSLayoutConstraint(item: self.photoFrameView, attribute:.height, relatedBy:.equal,
-                                                     toItem:nil, attribute:.notAnAttribute, multiplier:1.0,
-                                                   constant:(kPhotoDiameter + kPhotoFrameViewPadding))
-        self.photoFrameView.addConstraint(constraint)
+        photoFrameView.addConstraint(constraint)
         
-        constraint = NSLayoutConstraint(item: self.photoFrameView, attribute:.centerX, relatedBy:.equal,
-                                                     toItem:self.view, attribute:.centerX, multiplier:1.0,
-                                                   constant:0.0)
-        self.view.addConstraint(constraint)
+        constraint = NSLayoutConstraint(
+            item: photoFrameView,
+            attribute:.height,
+            relatedBy: .equal,
+            toItem: nil,
+            attribute: .notAnAttribute,
+            multiplier: 1.0,
+            constant:(kPhotoDiameter + kPhotoFrameViewPadding))
         
-        constraint = NSLayoutConstraint(item: self.photoFrameView, attribute:.centerY, relatedBy:.equal,
-                                                     toItem:self.view, attribute:.centerY, multiplier:1.0,
-                                                   constant:0.0)
-        self.view.addConstraint(constraint)
+        photoFrameView.addConstraint(constraint)
+        
+        constraint = NSLayoutConstraint(
+            item: photoFrameView,
+            attribute:.centerX,
+            relatedBy:.equal,
+            toItem: view,
+            attribute: .centerX,
+            multiplier: 1.0,
+            constant: 0.0)
+        
+        view.addConstraint(constraint)
+        
+        constraint = NSLayoutConstraint(
+            item: photoFrameView,
+            attribute:.centerY,
+            relatedBy:.equal,
+            toItem: view,
+            attribute: .centerY,
+            multiplier: 1.0,
+            constant: 0.0)
+        
+        view.addConstraint(constraint)
         
         // ---------------------------
         // The button "add photo".
         // ---------------------------
         
-        constraint = NSLayoutConstraint(item: self.addPhotoButton, attribute:.width, relatedBy:.equal,
-                                                     toItem:nil, attribute:.notAnAttribute, multiplier:1.0,
-                                                   constant:kPhotoDiameter)
-        self.addPhotoButton.addConstraint(constraint)
+        constraint = NSLayoutConstraint(
+            item: addPhotoButton,
+            attribute:.width,
+            relatedBy:.equal,
+            toItem: nil,
+            attribute:
+            .notAnAttribute,
+            multiplier: 1.0,
+            constant: kPhotoDiameter)
         
-        constraint = NSLayoutConstraint(item: self.addPhotoButton, attribute:.height, relatedBy:.equal,
-                                                     toItem:nil, attribute:.notAnAttribute, multiplier:1.0,
-                                                   constant:kPhotoDiameter)
-        self.addPhotoButton.addConstraint(constraint)
+        addPhotoButton.addConstraint(constraint)
         
-        constraint = NSLayoutConstraint(item: self.addPhotoButton, attribute:.centerX, relatedBy:.equal,
-                                                     toItem:self.photoFrameView, attribute:.centerX, multiplier:1.0,
-                                                   constant:0.0)
-        self.view.addConstraint(constraint)
+        constraint = NSLayoutConstraint(
+            item: self.addPhotoButton,
+            attribute:.height,
+            relatedBy:.equal,
+            toItem: nil,
+            attribute: .notAnAttribute,
+            multiplier: 1.0,
+            constant:kPhotoDiameter)
         
-        constraint = NSLayoutConstraint(item: self.addPhotoButton, attribute:.centerY, relatedBy:.equal,
-                                                     toItem:self.photoFrameView, attribute:.centerY, multiplier:1.0,
-                                                   constant:0.0)
-        self.view.addConstraint(constraint)
+        addPhotoButton.addConstraint(constraint)
         
-        self.didSetupConstraints = true
+        constraint = NSLayoutConstraint(
+            item: self.addPhotoButton,
+            attribute:.centerX,
+            relatedBy:.equal,
+            toItem: photoFrameView,
+            attribute: .centerX,
+            multiplier: 1.0,
+            constant: 0.0)
+        
+        view.addConstraint(constraint)
+        
+        constraint = NSLayoutConstraint(
+            item: self.addPhotoButton,
+            attribute:.centerY,
+            relatedBy:.equal,
+            toItem: photoFrameView,
+            attribute: .centerY,
+            multiplier: 1.0,
+            constant: 0.0)
+        
+        view.addConstraint(constraint)
+        
+        didSetupConstraints = true
     }
 
-    // #pragma mark - Action handling
+    // MARK: - Action handling
 
     func onAddPhotoButtonTouch(sender: UIButton) {
         let photo = UIImage(named: "photo")!
         let imageCropVC = RSKImageCropViewController(image: photo, cropMode: .circle)
         imageCropVC.delegate = self
-        self.navigationController?.pushViewController(imageCropVC, animated: true)
+        navigationController?.pushViewController(imageCropVC, animated: true)
     }
 
-    // #pragma mark - RSKImageCropViewControllerDelegate
+    // MARK: - RSKImageCropViewControllerDelegate
 
     func didCancelCrop() {
-        let _ = self.navigationController?.popViewController(animated: true)
+        let _ = navigationController?.popViewController(animated: true)
     }
 
     func didCropImage(_ croppedImage: UIImage, usingCropRect cropRect: CGRect) {
-        self.addPhotoButton.setImage(croppedImage, for: .normal)
-        let _ = self.navigationController?.popViewController(animated: true)
+        addPhotoButton.setImage(croppedImage, for: .normal)
+        let _ = navigationController?.popViewController(animated: true)
     }
     
     func didCropImage(_ croppedImage: UIImage, usingCropRect cropRect: CGRect, rotationAngle: CGFloat) {
-        self.addPhotoButton.setImage(croppedImage, for: .normal)
-        let _ = self.navigationController?.popViewController(animated: true)
+        addPhotoButton.setImage(croppedImage, for: .normal)
+        let _ = navigationController?.popViewController(animated: true)
     }
     
     /**

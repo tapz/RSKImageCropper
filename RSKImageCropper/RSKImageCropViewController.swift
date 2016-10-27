@@ -290,6 +290,8 @@ public class RSKImageCropViewController: UIViewController, UIGestureRecognizerDe
         view.backgroundColor = UIColor.black
         view.clipsToBounds = true
         
+        imageScrollView.backgroundColor = UIColor.red
+        
         view.addSubview(imageScrollView)
         view.addSubview(overlayView)
         view.addSubview(moveAndScaleLabel)
@@ -375,50 +377,50 @@ public class RSKImageCropViewController: UIViewController, UIGestureRecognizerDe
             // ---------------------------
             
             let constraint = NSLayoutConstraint(
-                item: self.moveAndScaleLabel,
+                item: moveAndScaleLabel,
                 attribute: .centerX,
                 relatedBy: .equal,
-                toItem:self.view,
+                toItem: view,
                 attribute: .centerX,
                 multiplier: 1.0,
                 constant: 0.0)
                 
             view.addConstraint(constraint)
             
-            var constant = self.portraitMoveAndScaleLabelTopAndCropViewTopVerticalSpace
-            self.moveAndScaleLabelTopConstraint = NSLayoutConstraint(
-                item: self.moveAndScaleLabel,
+            var constant = portraitMoveAndScaleLabelTopAndCropViewTopVerticalSpace
+            moveAndScaleLabelTopConstraint = NSLayoutConstraint(
+                item: moveAndScaleLabel,
                 attribute: .top,
                 relatedBy: .equal,
-                toItem: self.view,
+                toItem: view,
                 attribute: .top,
                 multiplier: 1.0,
                 constant: constant)
                 
-            view.addConstraint(self.moveAndScaleLabelTopConstraint)
+            view.addConstraint(moveAndScaleLabelTopConstraint)
             
             // --------------------
             // The button "Cancel".
             // --------------------
             
             constant = self.portraitCancelButtonLeadingAndCropViewLeadingHorizontalSpace
-            self.cancelButtonLeadingConstraint = NSLayoutConstraint(
-                item: self.cancelButton,
+            cancelButtonLeadingConstraint = NSLayoutConstraint(
+                item: cancelButton,
                 attribute: .leading,
                 relatedBy: .equal,
-                toItem: self.view,
+                toItem: view,
                 attribute: .leading,
                 multiplier: 1.0,
                 constant: constant)
                 
-            self.view.addConstraint(self.cancelButtonLeadingConstraint)
+            view.addConstraint(cancelButtonLeadingConstraint)
             
-            constant = self.portraitCropViewBottomAndCancelButtonBottomVerticalSpace
-            self.cancelButtonBottomConstraint = NSLayoutConstraint(
+            constant = portraitCropViewBottomAndCancelButtonBottomVerticalSpace
+            cancelButtonBottomConstraint = NSLayoutConstraint(
                 item: view,
                 attribute: .bottom,
                 relatedBy: .equal,
-                toItem: self.cancelButton,
+                toItem: cancelButton,
                 attribute: .bottom,
                 multiplier: 1.0,
                 constant: constant)
@@ -429,75 +431,75 @@ public class RSKImageCropViewController: UIViewController, UIGestureRecognizerDe
             // The button "Choose".
             // --------------------
             
-            constant = self.portraitCropViewTrailingAndChooseButtonTrailingHorizontalSpace
-            self.chooseButtonTrailingConstraint = NSLayoutConstraint(
+            constant = portraitCropViewTrailingAndChooseButtonTrailingHorizontalSpace
+            chooseButtonTrailingConstraint = NSLayoutConstraint(
                 item: view,
                 attribute: .trailing,
                 relatedBy: .equal,
-                toItem: self.chooseButton,
+                toItem: chooseButton,
                 attribute: .trailing,
                 multiplier: 1.0,
                 constant: constant)
                 
             view.addConstraint(chooseButtonTrailingConstraint)
             
-            constant = self.portraitCropViewBottomAndChooseButtonBottomVerticalSpace
-            self.chooseButtonBottomConstraint = NSLayoutConstraint(
+            constant = portraitCropViewBottomAndChooseButtonBottomVerticalSpace
+            chooseButtonBottomConstraint = NSLayoutConstraint(
                 item: view,
                 attribute: .bottom,
                 relatedBy: .equal,
-                toItem: self.chooseButton,
+                toItem: chooseButton,
                 attribute: .bottom,
                 multiplier: 1.0,
                 constant: constant)
                 
             view.addConstraint(chooseButtonBottomConstraint)
             
-            self.didSetupConstraints = true
+            didSetupConstraints = true
         } else {
             if isPortraitInterfaceOrientation() {
-                self.moveAndScaleLabelTopConstraint.constant = self.portraitMoveAndScaleLabelTopAndCropViewTopVerticalSpace
-                self.cancelButtonBottomConstraint.constant = self.portraitCropViewBottomAndCancelButtonBottomVerticalSpace
-                self.cancelButtonLeadingConstraint.constant = self.portraitCancelButtonLeadingAndCropViewLeadingHorizontalSpace
-                self.chooseButtonBottomConstraint.constant = self.portraitCropViewBottomAndChooseButtonBottomVerticalSpace
-                self.chooseButtonTrailingConstraint.constant = self.portraitCropViewTrailingAndChooseButtonTrailingHorizontalSpace
+                moveAndScaleLabelTopConstraint.constant = portraitMoveAndScaleLabelTopAndCropViewTopVerticalSpace
+                cancelButtonBottomConstraint.constant = portraitCropViewBottomAndCancelButtonBottomVerticalSpace
+                cancelButtonLeadingConstraint.constant = portraitCancelButtonLeadingAndCropViewLeadingHorizontalSpace
+                chooseButtonBottomConstraint.constant = portraitCropViewBottomAndChooseButtonBottomVerticalSpace
+                chooseButtonTrailingConstraint.constant = portraitCropViewTrailingAndChooseButtonTrailingHorizontalSpace
             } else {
-                self.moveAndScaleLabelTopConstraint.constant = self.landscapeMoveAndScaleLabelTopAndCropViewTopVerticalSpace
-                self.cancelButtonBottomConstraint.constant = self.landscapeCropViewBottomAndCancelButtonBottomVerticalSpace
-                self.cancelButtonLeadingConstraint.constant = self.landscapeCancelButtonLeadingAndCropViewLeadingHorizontalSpace
-                self.chooseButtonBottomConstraint.constant = self.landscapeCropViewBottomAndChooseButtonBottomVerticalSpace
-                self.chooseButtonTrailingConstraint.constant = self.landscapeCropViewTrailingAndChooseButtonTrailingHorizontalSpace
+                moveAndScaleLabelTopConstraint.constant = landscapeMoveAndScaleLabelTopAndCropViewTopVerticalSpace
+                cancelButtonBottomConstraint.constant = landscapeCropViewBottomAndCancelButtonBottomVerticalSpace
+                cancelButtonLeadingConstraint.constant = landscapeCancelButtonLeadingAndCropViewLeadingHorizontalSpace
+                chooseButtonBottomConstraint.constant = landscapeCropViewBottomAndChooseButtonBottomVerticalSpace
+                chooseButtonTrailingConstraint.constant = landscapeCropViewTrailingAndChooseButtonTrailingHorizontalSpace
             }
         }
     }
 
-    // #pragma mark - Custom Accessors
+    // MARK: - Custom Accessors
 
     fileprivate var cropRect: CGRect {
-        var cropRect = CGRect.zero
+        var rect = CGRect.zero
         let zoomScale = 1.0 / imageScrollView.zoomScale
         
-        cropRect.origin.x = round(imageScrollView.contentOffset.x * zoomScale)
-        cropRect.origin.y = round(imageScrollView.contentOffset.y * zoomScale)
-        cropRect.size.width = imageScrollView.bounds.width * zoomScale
-        cropRect.size.height = imageScrollView.bounds.height * zoomScale
+        rect.origin.x = round(imageScrollView.contentOffset.x * zoomScale)
+        rect.origin.y = round(imageScrollView.contentOffset.y * zoomScale)
+        rect.size.width = imageScrollView.bounds.width * zoomScale
+        rect.size.height = imageScrollView.bounds.height * zoomScale
         
-        let width = cropRect.width
-        let height = cropRect.height
+        let width = rect.width
+        let height = rect.height
         let ceilWidth = ceil(width)
         let ceilHeight = ceil(height)
         
         if fabs(ceilWidth - width) < pow(10, kK) * RSK_EPSILON * fabs(ceilWidth + width) || fabs(ceilWidth - width) < RSK_MIN ||
             fabs(ceilHeight - height) < pow(10, kK) * RSK_EPSILON * fabs(ceilHeight + height) || fabs(ceilHeight - height) < RSK_MIN
         {
-            cropRect.size.width = ceilWidth
-            cropRect.size.height = ceilHeight
+            rect.size.width = ceilWidth
+            rect.size.height = ceilHeight
         } else {
-            cropRect.size.width = floor(width)
-            cropRect.size.height = floor(height)
+            rect.size.width = floor(width)
+            rect.size.height = floor(height)
         }
         
-        return cropRect
+        return rect
     }
 
     fileprivate var rectForClipPath: CGRect {
@@ -527,8 +529,8 @@ public class RSKImageCropViewController: UIViewController, UIGestureRecognizerDe
         set(rotationAngle) {
             if self.rotationAngle != rotationAngle {
                 let rotation = (rotationAngle - self.rotationAngle)
-                let transform = self.imageScrollView.transform.rotated(by: rotation)
-                self.imageScrollView.transform = transform
+                let transform = imageScrollView.transform.rotated(by: rotation)
+                imageScrollView.transform = transform
             }
         }
     }
@@ -541,7 +543,7 @@ public class RSKImageCropViewController: UIViewController, UIGestureRecognizerDe
         self.imageScrollView.zoomScale = zoomScale
     }
 
-    // #pragma mark - Action handling
+    // MARK: - Action handling
 
     @objc fileprivate func onCancelButtonTouch() {
         cancelCrop()
@@ -571,13 +573,13 @@ public class RSKImageCropViewController: UIViewController, UIGestureRecognizerDe
         }
     }
 
-    //#pragma mark - Public
+    // MARK: - Public
 
     fileprivate func isPortraitInterfaceOrientation() -> Bool {
-        return view.bounds.height > self.view.bounds.width
+        return view.bounds.height > view.bounds.width
     }
 
-    //#pragma mark - Private
+    // MARK: - Private
 
     fileprivate func reset(animated: Bool) {
         if animated {
@@ -679,23 +681,22 @@ public class RSKImageCropViewController: UIViewController, UIGestureRecognizerDe
 
     fileprivate func displayImage() {
         guard let originalImage = originalImage else { return }
+        
         imageScrollView.displayImage(originalImage)
         reset(animated: false)
     }
 
     fileprivate func layoutImageScrollView() {
-        guard let dataSource = dataSource else { return }
-    
-        var frame = CGRect.zero
+        var scrollViewFrame = CGRect.zero
         
         // The bounds of the image scroll view should always fill the mask area.
         switch cropMode {
             case .square:
                 if rotationAngle == 0.0 {
-                    frame = maskRect
+                    scrollViewFrame = maskRect
                 } else {
                     // Step 1: Rotate the left edge of the initial rect of the image scroll view clockwise around the center by `rotationAngle`.
-                    let initialRect = self.maskRect
+                    let initialRect = maskRect
                     let rotationAngle = self.rotationAngle
                     
                     let leftTopPoint = CGPoint(x: initialRect.origin.x, y: initialRect.origin.y)
@@ -714,13 +715,13 @@ public class RSKImageCropViewController: UIViewController, UIGestureRecognizerDe
                     // then the bounds of the rotated image scroll view does not completely fill the mask area.
                     // Therefore, we need to update the frame of the image scroll view.
                     // Otherwise, we can use the initial rect.
-                    if (points.count > 1) {
+                    if points.count > 1 {
                         // We have a right triangle.
                         
                         // Step 4: Calculate the altitude of the right triangle.
-                        if ((alpha > CGFloat(M_PI_2)) && (alpha < CGFloat.pi)) {
+                        if (alpha > CGFloat(M_PI_2)) && (alpha < CGFloat.pi) {
                             alpha = alpha - CGFloat(M_PI_2)
-                        } else if ((alpha > (CGFloat.pi + CGFloat(M_PI_2))) && (alpha < (CGFloat.pi + CGFloat.pi))) {
+                        } else if (alpha > (CGFloat.pi + CGFloat(M_PI_2))) && (alpha < (CGFloat.pi + CGFloat.pi)) {
                             alpha = alpha - (CGFloat.pi + CGFloat(M_PI_2))
                         }
                         let sinAlpha = sin(alpha)
@@ -735,39 +736,41 @@ public class RSKImageCropViewController: UIViewController, UIGestureRecognizerDe
                         // Step 6: Calculate the target frame.
                         let scale = targetWidth / initialWidth
                         let center = RSKRectCenterPoint(rect: initialRect)
-                        frame = RSKRectScaleAroundPoint(rect0: initialRect, point: center, sx: scale, sy: scale)
+                        scrollViewFrame = RSKRectScaleAroundPoint(rect0: initialRect, point: center, sx: scale, sy: scale)
                         
                         // Step 7: Avoid floats.
-                        frame.origin.x = round(frame.minX)
-                        frame.origin.y = round(frame.minY)
-                        frame = frame.integral
+                        scrollViewFrame.origin.x = round(scrollViewFrame.minX)
+                        scrollViewFrame.origin.y = round(scrollViewFrame.minY)
+                        scrollViewFrame = scrollViewFrame.integral
                     } else {
                         // Step 4: Use the initial rect.
-                        frame = initialRect
+                        scrollViewFrame = initialRect
                     }
                 }
             case .circle:
-                frame = self.maskRect
+                scrollViewFrame = maskRect
             case .custom:
-                frame = dataSource.customMovementRect
+                guard let dataSource = dataSource else {
+                    fatalError("Data source needed for custom crop mode!")
+                }
+                
+                scrollViewFrame = dataSource.customMovementRect
                 // Will be changed to `CGRectNull` in version `2.0.0`.
                 //frame = self.maskRect
         }
         
-        let transform = self.imageScrollView.transform
-        self.imageScrollView.transform = .identity
-        self.imageScrollView.frame = frame
-        self.imageScrollView.transform = transform
+        let transform = imageScrollView.transform
+        imageScrollView.transform = .identity
+        imageScrollView.frame = scrollViewFrame
+        imageScrollView.transform = transform
     }
 
     fileprivate func layoutOverlayView() {
         let frame = CGRect(x: 0, y: 0, width: view.bounds.width * 2, height: view.bounds.height * 2)
-        self.overlayView.frame = frame
+        overlayView.frame = frame
     }
 
     fileprivate func updateMaskRect() {
-        guard let dataSource = dataSource else { return }
-    
         switch cropMode {
             case .circle:
                 let viewWidth = view.bounds.width
@@ -782,10 +785,11 @@ public class RSKImageCropViewController: UIViewController, UIGestureRecognizerDe
                 
                 let maskSize = CGSize(width: diameter, height: diameter)
                 
-                self.maskRect = CGRect(x: (viewWidth - maskSize.width) * 0.5,
-                                           y: (viewHeight - maskSize.height) * 0.5,
-                                           width: maskSize.width,
-                                           height: maskSize.height)
+                maskRect = CGRect(
+                    x: (viewWidth - maskSize.width) * 0.5,
+                    y: (viewHeight - maskSize.height) * 0.5,
+                    width: maskSize.width,
+                    height: maskSize.height)
             case .square:
                 let viewWidth = view.bounds.width
                 let viewHeight = view.bounds.height
@@ -799,42 +803,50 @@ public class RSKImageCropViewController: UIViewController, UIGestureRecognizerDe
                 
                 let maskSize = CGSize(width: length, height: length)
                 
-                self.maskRect = CGRect(x: (viewWidth - maskSize.width) * 0.5,
-                                           y: (viewHeight - maskSize.height) * 0.5,
-                                           width: maskSize.width,
-                                           height: maskSize.height)
+                maskRect = CGRect(
+                    x: (viewWidth - maskSize.width) * 0.5,
+                    y: (viewHeight - maskSize.height) * 0.5,
+                    width: maskSize.width,
+                    height: maskSize.height)
             case .custom:
+                guard let dataSource = dataSource else {
+                    fatalError("Data source needed for custom crop mode!")
+                }
+            
                 maskRect = dataSource.customMaskRect
         }
     }
 
     fileprivate func updateMaskPath() {
-        guard let dataSource = dataSource else { return }
-    
         switch cropMode {
             case .circle:
                 maskPath = UIBezierPath(ovalIn: rectForMaskPath)
             case .square:
                 maskPath = UIBezierPath(rect: rectForMaskPath)
             case .custom:
+                guard let dataSource = dataSource else {
+                    fatalError("Data source needed for custom crop mode!")
+                }
+            
                 maskPath = dataSource.customMaskPath
         }
     }
 
     fileprivate func croppedImage(image: UIImage, cropRect: CGRect, scale imageScale: CGFloat, orientation imageOrientation: UIImageOrientation) -> UIImage {
-        if image.images == nil {
-            if let croppedCGImage = image.cgImage!.cropping(to: cropRect) {
-                return UIImage(cgImage: croppedCGImage, scale:imageScale, orientation:imageOrientation)
+        if let images = image.images {
+            var croppedImages = [UIImage]()
+            
+            images.forEach {
+                croppedImages.append(croppedImage(image: $0, cropRect: cropRect, scale: imageScale, orientation: imageOrientation))
             }
             
-            return UIImage()
+            return UIImage.animatedImage(with: croppedImages, duration: image.duration)!
         } else {
-            let animatedImage = image
-            var croppedImages = [UIImage]()
-            for image in animatedImage.images! {
-                croppedImages.append(self.croppedImage(image: image, cropRect:cropRect, scale:imageScale, orientation:imageOrientation))
+            if let croppedCGImage = image.cgImage!.cropping(to: cropRect) {
+                return UIImage(cgImage: croppedCGImage, scale: imageScale, orientation: imageOrientation)
             }
-            return UIImage.animatedImage(with: croppedImages, duration:image.duration)!
+            
+            return image
         }
     }
 
@@ -868,7 +880,7 @@ public class RSKImageCropViewController: UIViewController, UIGestureRecognizerDe
         cropRect = cropRect.applying(CGAffineTransform(scaleX: imageScale, y: imageScale))
         
         // Step 2: create an image using the data contained within the specified rect.
-        var croppedImage = self.croppedImage(image: image, cropRect:cropRect, scale:imageScale, orientation:imageOrientation)
+        var croppedImage = self.croppedImage(image: image, cropRect: cropRect, scale: imageScale, orientation: imageOrientation)
         
         // Step 3: fix orientation of the cropped image.
         croppedImage = croppedImage.fixOrientation()
@@ -884,9 +896,15 @@ public class RSKImageCropViewController: UIViewController, UIGestureRecognizerDe
         } else {
             // Step 5: create a new context.
             let maskSize = maskPath.bounds.integral.size
-            let contextSize = CGSize(width: ceil(maskSize.width / zoomScale),
-                                            height: ceil(maskSize.height / zoomScale))
+            let contextSize = CGSize(
+                width: ceil(maskSize.width / zoomScale),
+                height: ceil(maskSize.height / zoomScale))
+            
             UIGraphicsBeginImageContextWithOptions(contextSize, false, imageScale)
+            guard let ctx = UIGraphicsGetCurrentContext() else {
+                // FIXME: The context is always nil
+                return croppedImage
+            }
             
             defer {
                 UIGraphicsEndImageContext()
@@ -913,8 +931,9 @@ public class RSKImageCropViewController: UIViewController, UIGestureRecognizerDe
             }
             
             // Step 8: draw the cropped image.
-            let point = CGPoint(x: round((contextSize.width - croppedImage.size.width) * 0.5),
-                                        y: round((contextSize.height - croppedImage.size.height) * 0.5))
+            let point = CGPoint(
+                x: round((contextSize.width - croppedImage.size.width) * 0.5),
+                y: round((contextSize.height - croppedImage.size.height) * 0.5))
             croppedImage.draw(at: point)
             
             // Step 9: get the cropped image affter processing from the context.
@@ -951,7 +970,7 @@ public class RSKImageCropViewController: UIViewController, UIGestureRecognizerDe
         delegate?.didCancelCrop()
     }
 
-    // #pragma mark - UIGestureRecognizerDelegate
+    // MARK: - UIGestureRecognizerDelegate
 
     public func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer) -> Bool {
         return true
