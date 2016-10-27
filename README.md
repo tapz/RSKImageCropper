@@ -15,6 +15,10 @@ An image cropper for iOS like in the Contacts app with support for landscape ori
 
 1.  Add the pod `RSKImageCropperSwift` to your [Podfile](http://guides.cocoapods.org/using/the-podfile.html).
 
+		pod 'RSKImageCropperSwift', '1.5.1.swift3'
+		
+		or
+
         pod 'RSKImageCropperSwift', :git => 'https://github.com/tapz/RSKImageCropper.git'
 
 2.  Run `pod install` from Terminal, then open your app's `.xcworkspace` file to launch Xcode.
