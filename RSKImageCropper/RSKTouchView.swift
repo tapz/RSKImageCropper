@@ -27,7 +27,7 @@ import UIKit
 class RSKTouchView: UIView {
     weak var receiver = UIView()
 
-    func hitTest(point pt: CGPoint, withEvent event: UIEvent) -> UIView? {
+    override func hitTest(_ pt: CGPoint, with event: UIEvent?) -> UIView? {
         if point(inside: pt, with: event) {
             return receiver
         }

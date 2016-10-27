@@ -290,8 +290,6 @@ public class RSKImageCropViewController: UIViewController, UIGestureRecognizerDe
         view.backgroundColor = UIColor.black
         view.clipsToBounds = true
         
-        imageScrollView.backgroundColor = UIColor.red
-        
         view.addSubview(imageScrollView)
         view.addSubview(overlayView)
         view.addSubview(moveAndScaleLabel)
