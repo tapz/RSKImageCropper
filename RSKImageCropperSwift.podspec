@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name          = 'RSKImageCropperSwift'
-  s.version       = '1.5.1.swift'
+  s.version       = '1.5.1.swift3'
   s.summary       = 'An image cropper for iOS. This version is ported from Objective-C to Swift 3.0.'
   s.homepage      = 'https://github.com/tapz/RSKImageCropper'
   s.license       = { :type => 'MIT', :file => 'LICENSE' }
