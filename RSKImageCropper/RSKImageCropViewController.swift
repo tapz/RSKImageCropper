@@ -900,7 +900,6 @@ public class RSKImageCropViewController: UIViewController, UIGestureRecognizerDe
             
             UIGraphicsBeginImageContextWithOptions(contextSize, false, imageScale)
             guard let ctx = UIGraphicsGetCurrentContext() else {
-                // FIXME: The context is always nil
                 return croppedImage
             }
             
