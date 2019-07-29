@@ -119,6 +119,7 @@
 				TargetAttributes = {
 					A5BE393C1B32B49D00ECDF88 = {
 						CreatedOnToolsVersion = 6.3.2;
+						LastSwiftMigration = 1020;
 					};
 				};
 			};
@@ -127,6 +128,7 @@
 			developmentRegion = English;
 			hasScannedForEncodings = 0;
 			knownRegions = (
+				English,
 				en,
 			);
 			mainGroup = A5BE39331B32B49D00ECDF88;
@@ -278,7 +280,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = "com.ruslanskorb.$(PRODUCT_NAME:rfc1034identifier)";
 				PRODUCT_NAME = RSKImageCropper;
 				SKIP_INSTALL = YES;
-				SWIFT_VERSION = 3.0.1;
+				SWIFT_VERSION = 5.0;
 			};
 			name = Debug;
 		};
@@ -297,7 +299,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = "com.ruslanskorb.$(PRODUCT_NAME:rfc1034identifier)";
 				PRODUCT_NAME = RSKImageCropper;
 				SKIP_INSTALL = YES;
-				SWIFT_VERSION = 3.0.1;
+				SWIFT_VERSION = 5.0;
 			};
 			name = Release;
 		};

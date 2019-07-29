@@ -118,7 +118,7 @@ public class RSKImageCropViewController: UIViewController, UIGestureRecognizerDe
 
     fileprivate lazy var maskLayer: CAShapeLayer = {
         let layer = CAShapeLayer()
-        layer.fillRule = kCAFillRuleEvenOdd
+        layer.fillRule = CAShapeLayerFillRule.evenOdd
         layer.fillColor = self.maskLayerColor.cgColor
         layer.lineWidth = self.maskLayerLineWidth
         layer.strokeColor = self.maskLayerStrokeColor?.cgColor ?? UIColor.black.cgColor
@@ -830,7 +830,7 @@ public class RSKImageCropViewController: UIViewController, UIGestureRecognizerDe
         }
     }
 
-    fileprivate func croppedImage(image: UIImage, cropRect: CGRect, scale imageScale: CGFloat, orientation imageOrientation: UIImageOrientation) -> UIImage {
+    fileprivate func croppedImage(image: UIImage, cropRect: CGRect, scale imageScale: CGFloat, orientation imageOrientation: UIImage.Orientation) -> UIImage {
         if let images = image.images {
             var croppedImages = [UIImage]()
             
