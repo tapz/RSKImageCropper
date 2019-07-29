@@ -64,7 +64,7 @@ class RSKImageScrollView: UIScrollView, UIScrollViewDelegate {
         showsHorizontalScrollIndicator = false
         bouncesZoom = true
         scrollsToTop = false
-        decelerationRate = UIScrollViewDecelerationRateFast
+        decelerationRate = UIScrollView.DecelerationRate.fast
         delegate = self
     }
     
@@ -137,7 +137,7 @@ class RSKImageScrollView: UIScrollView, UIScrollViewDelegate {
                 left = (bounds.width - contentSize.width) * 0.5
             }
             
-            contentInset = UIEdgeInsetsMake(top, left, top, left)
+            contentInset = UIEdgeInsets.init(top: top, left: left, bottom: top, right: left)
         } else {
             guard let zoomView = zoomView else { return }
         
